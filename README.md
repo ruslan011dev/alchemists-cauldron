@@ -15,6 +15,21 @@ The work is split into a technical base and three game levels. Later levels keep
 | Level 2 — Extended | Difficulty selection, saving, and continue |
 | Level 3 — Full game | Drag and drop, tooltips, reactions, Pour Out, keyboard shortcuts, and visual feedback |
 
+## Project structure
+
+Game rules stay out of the screen code. Each area has its own folder:
+
+```text
+src/
+  data/      ingredient, recipe and difficulty data
+  logic/     pure game rules
+  state/     current game state
+  storage/   saving and the leaderboard
+  ui/        screen rendering
+  styles/    CSS
+  assets/    icons and images
+```
+
 ## Technical base
 
 - TypeScript only. No frameworks, CSS frameworks, game engines, or other libraries.
@@ -23,4 +38,9 @@ The work is split into a technical base and three game levels. Later levels keep
 
 ## Run
 
-The development server is not set up yet. It will be added with the bundler.
+```bash
+npm install
+npm run dev
+```
+
+`npm run build` checks the types and writes the production build to `dist/`. `npm run preview` serves that build.
