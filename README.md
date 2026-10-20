@@ -8,11 +8,11 @@ Each ingredient has a limited stock. A brew spends the ingredients in the cauldr
 
 The work is split into a technical base and three game levels. Later levels keep everything from the earlier ones.
 
-| Stage | What it adds |
-| --- | --- |
-| Precondition 1 | Repository, tooling, folder structure, and quality checks |
-| Level 1 — Basic | One playable game with one fixed rule set |
-| Level 2 — Extended | Difficulty selection, saving, and continue |
+| Stage               | What it adds                                                                          |
+| ------------------- | ------------------------------------------------------------------------------------- |
+| Precondition 1      | Repository, tooling, folder structure, and quality checks                             |
+| Level 1 — Basic     | One playable game with one fixed rule set                                             |
+| Level 2 — Extended  | Difficulty selection, saving, and continue                                            |
 | Level 3 — Full game | Drag and drop, tooltips, reactions, Pour Out, keyboard shortcuts, and visual feedback |
 
 ## Project structure
@@ -44,3 +44,5 @@ npm run dev
 ```
 
 `npm run build` checks the types and writes the production build to `dist/`. `npm run preview` serves that build.
+
+`npm run lint` checks the code. `npm run format` formats it. A commit message must follow the [RS School git convention](https://rs.school/docs/git-convention). Before a push, lint and formatting must pass.

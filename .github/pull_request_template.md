@@ -6,7 +6,7 @@
 
 ## Self-check
 
-- [ ] 
+- [ ]
 
 ## Notes
 
