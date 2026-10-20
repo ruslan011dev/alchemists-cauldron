@@ -36,6 +36,12 @@ src/
 - Game rules stay separate from the screen.
 - The game is meant for the latest Google Chrome, on screens from 375 px to 1920 px wide.
 
+## Current game
+
+The shelf and cauldron from Level 1 are playable. Press **Start Game**. Six ingredient cards appear, each with its own stock from 2 to 15. Click a card to add that ingredient to the cauldron. The cauldron keeps the click order and holds at most 4 ingredients. At 4, the shelf stops accepting clicks. A card with stock 0 stays in place, turns dim, and cannot be used.
+
+The full catalogue has 8 ingredients. This level uses the first 6.
+
 ## Run
 
 ```bash
