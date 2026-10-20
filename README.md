@@ -38,7 +38,9 @@ src/
 
 ## Current game
 
-The shelf and cauldron from Level 1 are playable. Press **Start Game**. Six ingredient cards appear, each with its own stock from 2 to 15. Click a card to add that ingredient to the cauldron. The cauldron keeps the click order and holds at most 4 ingredients. At 4, the shelf stops accepting clicks. A card with stock 0 stays in place, turns dim, and cannot be used.
+The shelf and cauldron from Level 1 are playable. Press **Start Game**. A medium recipe is chosen, and six ingredient cards appear, each with its own stock from 2 to 15. Click a card to add that ingredient to the cauldron. The cauldron keeps the click order and holds at most 4 ingredients. At 4, the shelf stops accepting clicks. A card with stock 0 stays in place, turns dim, and cannot be used.
+
+Three bars show Temperature, Density and Magic Power. An empty cauldron is 0 / 0 / 0. Each added ingredient changes the sums. The pale band on a bar is the recipe target, the light line is 0, and the marker is the current value. The bar glows green when the value sits inside the target.
 
 The full catalogue has 8 ingredients. This level uses the first 6.
 

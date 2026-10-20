@@ -1,6 +1,8 @@
 import { LEVEL_ONE } from "../data/difficulty";
 import { INGREDIENTS, type IIngredient } from "../data/ingredients";
+import type { IRecipe } from "../data/recipes";
 import { addIngredient } from "../logic/add-ingredient";
+import { pickRecipe } from "../logic/recipe-generator";
 import { createStock } from "../logic/stock";
 
 export interface GameState {
@@ -9,6 +11,7 @@ export interface GameState {
   cauldronIngredients: IIngredient[];
   shelfStock: Record<string, number>;
   maxInCauldron: number;
+  activeRecipe: IRecipe | null;
 }
 
 export function createInitialState(): GameState {
@@ -25,6 +28,7 @@ export function createInitialState(): GameState {
     cauldronIngredients: [],
     shelfStock,
     maxInCauldron: LEVEL_ONE.maxInCauldron,
+    activeRecipe: null,
   };
 }
 
@@ -34,6 +38,7 @@ export function startGame(state: GameState): GameState {
     started: true,
     cauldronIngredients: [],
     shelfStock: createStock(state.shelf),
+    activeRecipe: pickRecipe("medium"),
   };
 }
 
