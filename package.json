@@ -1,0 +1,16 @@
+{
+  "name": "alchemists-cauldron",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Browser game: mix ingredients and brew a potion before time or lives run out.",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "^7.0.2",
+    "vite": "^8.3.4"
+  }
+}
