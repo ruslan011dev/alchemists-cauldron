@@ -119,13 +119,51 @@ h2 {
   color: inherit;
 }
 
-.start-button {
+.start-button,
+.brew-button {
   border: 0;
   border-radius: 999px;
   padding: 12px 28px;
   background: #c4492c;
   color: #fff8ee;
   cursor: pointer;
+}
+
+.start-button {
+  align-self: center;
+}
+
+.brew-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.recipe-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid #6b5344;
+  border-radius: 16px;
+  background: #241c18;
+}
+
+.recipe-title {
+  text-align: center;
+}
+
+.recipe-ranges,
+.ingredient-counter,
+.brew-result {
+  margin: 0;
+  text-align: center;
+}
+
+.ingredient-counter.is-full {
+  color: #ffcf70;
+  font-weight: 700;
 }
 
 .shelf,

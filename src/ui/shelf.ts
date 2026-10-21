@@ -81,7 +81,9 @@ export function renderShelf(
 ): void {
   parent.replaceChildren();
 
-  const full = state.cauldronIngredients.length >= state.maxInCauldron;
+  const full =
+    state.cauldronIngredients.length >= state.maxInCauldron ||
+    (state.started && state.lives <= 0);
 
   for (const ingredient of state.shelf) {
     const stock = state.shelfStock[ingredient.id] ?? 0;
