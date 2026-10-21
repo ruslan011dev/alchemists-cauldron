@@ -1,7 +1,10 @@
+import type { Difficulty } from "../data/recipes";
+
 export interface LeaderboardEntry {
   name: string;
   score: number;
   playedAt: number;
+  difficulty: Difficulty;
 }
 
 export const TOP_SIZE = 10;

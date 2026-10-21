@@ -148,6 +148,22 @@ h2 {
   padding: 8px 22px;
 }
 
+.pause-button.is-selected {
+  border-color: #e7c56a;
+  color: #ffcf70;
+}
+
+.difficulty-button {
+  width: 100%;
+  white-space: normal;
+  text-align: center;
+}
+
+.rules-text {
+  margin: 0;
+  text-align: center;
+}
+
 .pause-exit {
   width: 100%;
   padding: 12px 28px;

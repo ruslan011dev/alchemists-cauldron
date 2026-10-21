@@ -1,5 +1,9 @@
 import cauldronUrl from "../assets/cauldron.svg";
-import { LEVEL_ONE } from "../data/difficulty";
+import {
+  DIFFICULTIES,
+  DIFFICULTY_SETTINGS,
+  difficultyButtonText,
+} from "../data/difficulty";
 import { calculateCauldron } from "../logic/calculate-cauldron";
 import { isTopTenScore, isValidName } from "../logic/leaderboard";
 import { formatTime, isUrgent, timerPercent } from "../logic/timer";
@@ -15,6 +19,7 @@ import {
   exitToMenu,
   pauseGame,
   resumeGame,
+  selectDifficulty,
   startGame,
   syncTime,
   type GameOverReason,
@@ -81,11 +86,6 @@ export function renderApp(root: HTMLElement): void {
   const lives = document.createElement("div");
   lives.className = "lives";
   lives.setAttribute("aria-label", "Lives");
-  for (let index = 0; index < LEVEL_ONE.lives; index += 1) {
-    const life = document.createElement("span");
-    life.className = "life";
-    lives.append(life);
-  }
 
   const recipePanel = document.createElement("section");
   recipePanel.className = "recipe-panel";
@@ -114,6 +114,16 @@ export function renderApp(root: HTMLElement): void {
   openBoard.className = "pause-button";
   openBoard.textContent = "Leaderboard";
 
+  const helpButton = document.createElement("button");
+  helpButton.type = "button";
+  helpButton.className = "pause-button";
+  helpButton.textContent = "Help";
+
+  const settingsButton = document.createElement("button");
+  settingsButton.type = "button";
+  settingsButton.className = "pause-button";
+  settingsButton.textContent = "Settings";
+
   const pause = document.createElement("button");
   pause.type = "button";
   pause.className = "pause-button";
@@ -135,6 +145,8 @@ export function renderApp(root: HTMLElement): void {
     timer,
     lives,
     start,
+    helpButton,
+    settingsButton,
     openBoard,
     pause,
     recipePanel,
@@ -222,7 +234,7 @@ export function renderApp(root: HTMLElement): void {
   table.className = "leaderboard-table";
   const tableHead = document.createElement("thead");
   const headRow = document.createElement("tr");
-  for (const label of ["Rank", "Name", "Score", "Date"]) {
+  for (const label of ["Rank", "Name", "Score", "Difficulty", "Date"]) {
     const cell = document.createElement("th");
     cell.scope = "col";
     cell.textContent = label;
@@ -264,6 +276,58 @@ export function renderApp(root: HTMLElement): void {
   confirmDialog.append(confirmCard);
   confirmDialog.setAttribute("aria-labelledby", "clear-title");
 
+  const helpDialog = document.createElement("dialog");
+  helpDialog.className = "pause-dialog";
+  const helpCard = document.createElement("div");
+  helpCard.className = "pause-card";
+  const helpTitle = document.createElement("h2");
+  helpTitle.id = "help-title";
+  helpTitle.textContent = "Game rules";
+  const helpClose = document.createElement("button");
+  helpClose.type = "button";
+  helpClose.className = "start-button";
+  helpClose.textContent = "Close";
+  for (const text of [
+    "Add ingredients from the shelf until Temperature, Density and Magic Power fit the recipe. Brew allows a tolerance around each range.",
+    "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life.",
+    "The run ends when time runs out, lives reach 0, or the shelf and the cauldron are both empty. Pause stops the clock.",
+  ]) {
+    const paragraph = document.createElement("p");
+    paragraph.className = "rules-text";
+    paragraph.textContent = text;
+    helpCard.append(paragraph);
+  }
+  helpCard.prepend(helpTitle);
+  helpCard.append(helpClose);
+  helpDialog.append(helpCard);
+  helpDialog.setAttribute("aria-labelledby", "help-title");
+
+  const settingsDialog = document.createElement("dialog");
+  settingsDialog.className = "pause-dialog";
+  const settingsCard = document.createElement("div");
+  settingsCard.className = "pause-card";
+  const settingsTitle = document.createElement("h2");
+  settingsTitle.id = "settings-title";
+  settingsTitle.textContent = "Difficulty";
+  const difficultyButtons: HTMLButtonElement[] = [];
+  for (const difficulty of DIFFICULTIES) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "pause-button difficulty-button";
+    button.dataset.difficulty = difficulty;
+    button.textContent = difficultyButtonText(difficulty);
+    difficultyButtons.push(button);
+    settingsCard.append(button);
+  }
+  const settingsClose = document.createElement("button");
+  settingsClose.type = "button";
+  settingsClose.className = "start-button";
+  settingsClose.textContent = "Close";
+  settingsCard.prepend(settingsTitle);
+  settingsCard.append(settingsClose);
+  settingsDialog.append(settingsCard);
+  settingsDialog.setAttribute("aria-labelledby", "settings-title");
+
   root.replaceChildren(
     logo,
     title,
@@ -272,11 +336,13 @@ export function renderApp(root: HTMLElement): void {
     gameOver,
     board,
     confirmDialog,
+    helpDialog,
+    settingsDialog,
   );
 
   const updateClock = (timeLeft: number, playing: boolean): void => {
     timerValue.textContent = formatTime(timeLeft);
-    timerFill.style.width = `${timerPercent(timeLeft, LEVEL_ONE.startingTime)}%`;
+    timerFill.style.width = `${timerPercent(timeLeft, DIFFICULTY_SETTINGS[state.difficulty].startingTime)}%`;
     timer.classList.toggle("is-urgent", playing && isUrgent(timeLeft));
   };
 
@@ -291,8 +357,19 @@ export function renderApp(root: HTMLElement): void {
     board.hidden = !showLeaderboard;
     status.textContent = state.started ? `Score ${state.score}` : "Score 0";
     start.hidden = state.started;
+    helpButton.hidden = state.started;
+    settingsButton.hidden = state.started;
     openBoard.hidden = state.started;
     pause.hidden = !playing;
+    const maxLives = DIFFICULTY_SETTINGS[state.difficulty].lives;
+    if (lives.children.length !== maxLives) {
+      lives.replaceChildren();
+      for (let index = 0; index < maxLives; index += 1) {
+        const life = document.createElement("span");
+        life.className = "life";
+        lives.append(life);
+      }
+    }
     lives.hidden = !state.started;
     recipePanel.hidden = !recipe;
 
@@ -316,11 +393,19 @@ export function renderApp(root: HTMLElement): void {
       gameOverReason.textContent = GAME_OVER_TEXT[state.gameOverReason];
       gameOverScore.textContent = `Final score: ${state.score}`;
       nameForm.hidden =
-        scoreSaved || !isTopTenScore(loadLeaderboard(), state.score);
+        scoreSaved ||
+        !isTopTenScore(loadLeaderboard(state.difficulty), state.score);
+    }
+
+    for (const button of difficultyButtons) {
+      button.classList.toggle(
+        "is-selected",
+        button.dataset.difficulty === state.difficulty,
+      );
     }
 
     if (showLeaderboard) {
-      renderLeaderboard(tableBody, loadLeaderboard());
+      renderLeaderboard(tableBody, loadLeaderboard(state.difficulty));
       boardMessage.hidden = boardMessage.textContent === "";
     }
 
@@ -371,7 +456,7 @@ export function renderApp(root: HTMLElement): void {
     showLeaderboard = false;
     nameInput.value = "";
     nameError.textContent = "";
-    state = exitToMenu();
+    state = exitToMenu(state);
     paint();
   });
 
@@ -400,7 +485,7 @@ export function renderApp(root: HTMLElement): void {
       return;
     }
 
-    if (!addScore(nameInput.value, state.score)) {
+    if (!addScore(nameInput.value, state.score, state.difficulty)) {
       nameError.textContent = "Could not save the score.";
       return;
     }
@@ -422,12 +507,48 @@ export function renderApp(root: HTMLElement): void {
   });
 
   confirmClear.addEventListener("click", () => {
-    boardMessage.textContent = clearLeaderboard()
+    boardMessage.textContent = clearLeaderboard(state.difficulty)
       ? ""
       : "Could not clear the leaderboard.";
     confirmDialog.close();
     paint();
   });
+
+  helpButton.addEventListener("click", () => {
+    if (!helpDialog.open) {
+      helpDialog.showModal();
+    }
+  });
+
+  helpClose.addEventListener("click", () => {
+    helpDialog.close();
+  });
+
+  settingsButton.addEventListener("click", () => {
+    if (!state.started && !settingsDialog.open) {
+      settingsDialog.showModal();
+    }
+  });
+
+  settingsClose.addEventListener("click", () => {
+    settingsDialog.close();
+  });
+
+  for (const button of difficultyButtons) {
+    button.addEventListener("click", () => {
+      const difficulty = button.dataset.difficulty;
+      if (
+        difficulty !== "easy" &&
+        difficulty !== "medium" &&
+        difficulty !== "hard"
+      ) {
+        return;
+      }
+
+      state = selectDifficulty(state, difficulty);
+      paint();
+    });
+  }
 
   pauseDialog.addEventListener("cancel", (event) => {
     event.preventDefault();

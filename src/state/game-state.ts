@@ -1,6 +1,6 @@
-import { LEVEL_ONE } from "../data/difficulty";
+import { DIFFICULTY_SETTINGS } from "../data/difficulty";
 import { INGREDIENTS, type IIngredient } from "../data/ingredients";
-import type { IRecipe } from "../data/recipes";
+import type { Difficulty, IRecipe } from "../data/recipes";
 import { addIngredient } from "../logic/add-ingredient";
 import { isBrewSuccess } from "../logic/brew-check";
 import { calculateCauldron } from "../logic/calculate-cauldron";
@@ -13,6 +13,7 @@ export type GameOverReason = "time" | "lives" | "ingredients";
 
 export interface GameState {
   started: boolean;
+  difficulty: Difficulty;
   shelf: readonly IIngredient[];
   cauldronIngredients: IIngredient[];
   shelfStock: Record<string, number>;
@@ -27,8 +28,11 @@ export interface GameState {
   paused: boolean;
 }
 
-export function createInitialState(): GameState {
-  const shelf = INGREDIENTS.slice(0, LEVEL_ONE.shelfCount);
+export function createInitialState(
+  difficulty: Difficulty = "medium",
+): GameState {
+  const settings = DIFFICULTY_SETTINGS[difficulty];
+  const shelf = INGREDIENTS.slice(0, settings.shelfCount);
   const shelfStock: Record<string, number> = {};
 
   for (const ingredient of shelf) {
@@ -37,10 +41,11 @@ export function createInitialState(): GameState {
 
   return {
     started: false,
+    difficulty,
     shelf,
     cauldronIngredients: [],
     shelfStock,
-    maxInCauldron: LEVEL_ONE.maxInCauldron,
+    maxInCauldron: settings.maxInCauldron,
     activeRecipe: null,
     score: 0,
     timeLeft: 0,
@@ -52,18 +57,33 @@ export function createInitialState(): GameState {
   };
 }
 
+export function selectDifficulty(
+  state: GameState,
+  difficulty: Difficulty,
+): GameState {
+  if (state.started) {
+    return state;
+  }
+
+  return createInitialState(difficulty);
+}
+
 export function startGame(state: GameState, now = Date.now()): GameState {
-  const timeLeft = LEVEL_ONE.startingTime;
+  const settings = DIFFICULTY_SETTINGS[state.difficulty];
+  const shelf = INGREDIENTS.slice(0, settings.shelfCount);
+  const timeLeft = settings.startingTime;
 
   return {
     ...state,
     started: true,
+    shelf,
     cauldronIngredients: [],
-    shelfStock: createStock(state.shelf),
-    activeRecipe: pickRecipe(LEVEL_ONE.difficulty),
+    shelfStock: createStock(shelf),
+    maxInCauldron: settings.maxInCauldron,
+    activeRecipe: pickRecipe(settings.difficulty),
     score: 0,
     timeLeft,
-    lives: LEVEL_ONE.lives,
+    lives: settings.lives,
     lastBrew: null,
     endAt: now + timeLeft * 1000,
     gameOverReason: null,
@@ -100,8 +120,8 @@ export function resumeGame(state: GameState, now = Date.now()): GameState {
   };
 }
 
-export function exitToMenu(): GameState {
-  return createInitialState();
+export function exitToMenu(state: GameState): GameState {
+  return createInitialState(state.difficulty);
 }
 
 export function finishGame(
@@ -187,25 +207,26 @@ export function brewPotion(state: GameState, now = Date.now()): GameState {
   }
 
   const values = calculateCauldron(current.cauldronIngredients);
+  const settings = DIFFICULTY_SETTINGS[current.difficulty];
   const success = isBrewSuccess(
     values,
     current.activeRecipe,
-    LEVEL_ONE.tolerance,
+    settings.tolerance,
   );
 
   if (success) {
     const timeLeft = Math.min(
-      LEVEL_ONE.startingTime,
-      current.timeLeft + LEVEL_ONE.timeBonus,
+      settings.startingTime,
+      current.timeLeft + settings.timeBonus,
     );
 
     return settle({
       ...current,
-      score: current.score + LEVEL_ONE.scorePerBrew,
+      score: current.score + settings.scorePerBrew,
       timeLeft,
       endAt: now + timeLeft * 1000,
       cauldronIngredients: [],
-      activeRecipe: pickRecipe(LEVEL_ONE.difficulty),
+      activeRecipe: pickRecipe(settings.difficulty),
       lastBrew: "success",
     });
   }
