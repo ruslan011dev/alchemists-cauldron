@@ -42,6 +42,8 @@ The shelf and cauldron from Level 1 are playable. Press **Start Game**. A medium
 
 Three bars show Temperature, Density and Magic Power. An empty cauldron is 0 / 0 / 0. Each added ingredient changes the sums. The pale band on a bar is the recipe target, the light line is 0, and the marker is the current value. The bar glows green when the value sits inside the target.
 
+The recipe panel shows the recipe name, the three target ranges, and **Ingredients: added / 4**. At 4 / 4 the counter is highlighted and the shelf blocks. **Brew** stays disabled until the cauldron has at least one ingredient. A successful brew, within ±8 of the target, scores 200, keeps the timer at most 150 seconds, clears the cauldron and picks a new medium recipe. A failed brew removes one life and clears the cauldron. Spent ingredients do not return. The run starts with 3 lives and 150 seconds.
+
 The full catalogue has 8 ingredients. This level uses the first 6.
 
 ## Run
