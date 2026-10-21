@@ -24,6 +24,7 @@ export interface GameState {
   lastBrew: BrewResult;
   endAt: number | null;
   gameOverReason: GameOverReason | null;
+  paused: boolean;
 }
 
 export function createInitialState(): GameState {
@@ -47,6 +48,7 @@ export function createInitialState(): GameState {
     lastBrew: null,
     endAt: null,
     gameOverReason: null,
+    paused: false,
   };
 }
 
@@ -65,7 +67,41 @@ export function startGame(state: GameState, now = Date.now()): GameState {
     lastBrew: null,
     endAt: now + timeLeft * 1000,
     gameOverReason: null,
+    paused: false,
   };
+}
+
+export function pauseGame(state: GameState, now = Date.now()): GameState {
+  if (!state.started || state.paused || state.gameOverReason) {
+    return state;
+  }
+
+  const current = syncTime(state, now);
+  if (current.gameOverReason) {
+    return current;
+  }
+
+  return {
+    ...current,
+    paused: true,
+    endAt: null,
+  };
+}
+
+export function resumeGame(state: GameState, now = Date.now()): GameState {
+  if (!state.paused) {
+    return state;
+  }
+
+  return {
+    ...state,
+    paused: false,
+    endAt: now + state.timeLeft * 1000,
+  };
+}
+
+export function exitToMenu(): GameState {
+  return createInitialState();
 }
 
 export function finishGame(
@@ -76,6 +112,7 @@ export function finishGame(
     ...state,
     endAt: null,
     gameOverReason: reason,
+    paused: false,
     timeLeft: reason === "time" ? 0 : state.timeLeft,
   };
 }
@@ -97,7 +134,12 @@ function settle(state: GameState): GameState {
 }
 
 export function syncTime(state: GameState, now: number): GameState {
-  if (!state.started || state.gameOverReason || state.endAt === null) {
+  if (
+    !state.started ||
+    state.paused ||
+    state.gameOverReason ||
+    state.endAt === null
+  ) {
     return state;
   }
 
@@ -110,7 +152,12 @@ export function syncTime(state: GameState, now: number): GameState {
 }
 
 export function addToCauldron(state: GameState, id: string): GameState {
-  if (!state.started || state.gameOverReason || state.lives <= 0) {
+  if (
+    !state.started ||
+    state.paused ||
+    state.gameOverReason ||
+    state.lives <= 0
+  ) {
     return state;
   }
 
@@ -123,6 +170,10 @@ export function addToCauldron(state: GameState, id: string): GameState {
 }
 
 export function brewPotion(state: GameState, now = Date.now()): GameState {
+  if (state.paused) {
+    return state;
+  }
+
   const current = syncTime(state, now);
 
   if (

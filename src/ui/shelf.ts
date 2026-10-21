@@ -81,7 +81,8 @@ export function renderShelf(
 ): void {
   parent.replaceChildren();
 
-  const full =
+  const blocked =
+    state.paused ||
     state.cauldronIngredients.length >= state.maxInCauldron ||
     (state.started && state.lives <= 0);
 
@@ -89,7 +90,7 @@ export function renderShelf(
     const stock = state.shelfStock[ingredient.id] ?? 0;
     const empty = !state.started || stock <= 0;
     parent.append(
-      createCard(ingredient, empty ? 0 : stock, empty, full, onAdd),
+      createCard(ingredient, empty ? 0 : stock, empty, blocked, onAdd),
     );
   }
 }

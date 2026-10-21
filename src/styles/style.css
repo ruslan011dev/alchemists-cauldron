@@ -114,6 +114,8 @@ h2 {
 }
 
 .start-button,
+.pause-button,
+.pause-exit,
 .shelf-card {
   font: inherit;
   color: inherit;
@@ -129,8 +131,61 @@ h2 {
   cursor: pointer;
 }
 
-.start-button {
+.start-button,
+.pause-button {
   align-self: center;
+}
+
+.pause-button,
+.pause-exit {
+  border: 1px solid #6b5344;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pause-button {
+  padding: 8px 22px;
+}
+
+.pause-exit {
+  width: 100%;
+  padding: 12px 28px;
+}
+
+.game-field.is-paused {
+  filter: blur(12px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.pause-dialog {
+  width: min(360px, calc(100% - 32px));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.pause-dialog::backdrop {
+  background: rgb(12 9 8 / 55%);
+}
+
+.pause-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 24px;
+  border: 1px solid #6b5344;
+  border-radius: 16px;
+  background: #241c18;
+}
+
+.pause-card h2,
+.pause-card .start-button {
+  width: 100%;
+  text-align: center;
 }
 
 .brew-button:disabled {

@@ -6,6 +6,9 @@ import {
   addToCauldron,
   brewPotion,
   createInitialState,
+  exitToMenu,
+  pauseGame,
+  resumeGame,
   startGame,
   syncTime,
   type GameOverReason,
@@ -95,6 +98,11 @@ export function renderApp(root: HTMLElement): void {
   start.className = "start-button";
   start.textContent = "Start Game";
 
+  const pause = document.createElement("button");
+  pause.type = "button";
+  pause.className = "pause-button";
+  pause.textContent = "Pause";
+
   const bars = document.createElement("div");
   bars.className = "bars";
   const shelfTitle = document.createElement("h2");
@@ -111,6 +119,7 @@ export function renderApp(root: HTMLElement): void {
     timer,
     lives,
     start,
+    pause,
     recipePanel,
     result,
     bars,
@@ -119,6 +128,25 @@ export function renderApp(root: HTMLElement): void {
     cauldronTitle,
     cauldron,
   );
+
+  const pauseDialog = document.createElement("dialog");
+  pauseDialog.className = "pause-dialog";
+  const pauseCard = document.createElement("div");
+  pauseCard.className = "pause-card";
+  const pauseTitle = document.createElement("h2");
+  pauseTitle.id = "pause-title";
+  pauseTitle.textContent = "Game Paused";
+  const resume = document.createElement("button");
+  resume.type = "button";
+  resume.className = "start-button";
+  resume.textContent = "Resume";
+  const exit = document.createElement("button");
+  exit.type = "button";
+  exit.className = "pause-exit";
+  exit.textContent = "Exit to Menu";
+  pauseCard.append(pauseTitle, resume, exit);
+  pauseDialog.append(pauseCard);
+  pauseDialog.setAttribute("aria-labelledby", "pause-title");
 
   const gameOver = document.createElement("section");
   gameOver.className = "game-over";
@@ -134,7 +162,7 @@ export function renderApp(root: HTMLElement): void {
   playAgain.textContent = "Play again";
   gameOver.append(gameOverTitle, gameOverReason, gameOverScore, playAgain);
 
-  root.replaceChildren(logo, title, field, gameOver);
+  root.replaceChildren(logo, title, field, pauseDialog, gameOver);
 
   const updateClock = (timeLeft: number, playing: boolean): void => {
     timerValue.textContent = formatTime(timeLeft);
@@ -145,10 +173,14 @@ export function renderApp(root: HTMLElement): void {
   const paint = (): void => {
     const recipe = state.activeRecipe;
     const over = state.gameOverReason !== null;
+    const playing = state.started && !over && !state.paused;
     field.hidden = over;
+    field.classList.toggle("is-paused", state.paused);
+    field.inert = state.paused;
     gameOver.hidden = !over;
     status.textContent = state.started ? `Score ${state.score}` : "Score 0";
     start.hidden = state.started;
+    pause.hidden = !playing;
     lives.hidden = !state.started;
     recipePanel.hidden = !recipe;
 
@@ -164,9 +196,9 @@ export function renderApp(root: HTMLElement): void {
     const count = state.cauldronIngredients.length;
     counter.textContent = `Ingredients: ${count} / ${state.maxInCauldron}`;
     counter.classList.toggle("is-full", count >= state.maxInCauldron);
-    brew.disabled = !state.started || state.lives <= 0 || count === 0;
+    brew.disabled = !playing || count === 0;
     result.textContent = brewMessage(state);
-    updateClock(state.timeLeft, state.started && !over);
+    updateClock(state.timeLeft, playing);
 
     if (state.gameOverReason) {
       gameOverReason.textContent = GAME_OVER_TEXT[state.gameOverReason];
@@ -179,6 +211,13 @@ export function renderApp(root: HTMLElement): void {
       paint();
     });
     renderCauldron(cauldron, state.cauldronIngredients);
+
+    if (state.paused && !pauseDialog.open) {
+      pauseDialog.showModal();
+    }
+    if (!state.paused && pauseDialog.open) {
+      pauseDialog.close();
+    }
   };
 
   start.addEventListener("click", () => {
@@ -196,10 +235,43 @@ export function renderApp(root: HTMLElement): void {
     paint();
   });
 
+  pause.addEventListener("click", () => {
+    state = pauseGame(state);
+    paint();
+  });
+
+  resume.addEventListener("click", () => {
+    state = resumeGame(state);
+    paint();
+  });
+
+  exit.addEventListener("click", () => {
+    state = exitToMenu();
+    paint();
+  });
+
+  pauseDialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+  });
+
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      return;
+    }
+
+    const next = pauseGame(state);
+    if (next === state) {
+      return;
+    }
+
+    state = next;
+    paint();
+  });
+
   const watch = (): void => {
     requestAnimationFrame(watch);
 
-    if (!state.started || state.gameOverReason) {
+    if (!state.started || state.paused || state.gameOverReason) {
       return;
     }
 
