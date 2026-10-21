@@ -1,3 +1,4 @@
+import type { Difficulty } from "../data/recipes";
 import {
   TOP_SIZE,
   compareEntries,
@@ -6,49 +7,112 @@ import {
   type LeaderboardEntry,
 } from "../logic/leaderboard";
 
-const STORAGE_KEY = "alchemists-cauldron.level-1";
+const LEGACY_MEDIUM_KEY = "alchemists-cauldron.level-1";
 
-function isStoredEntry(value: unknown): value is LeaderboardEntry {
+function storageKey(difficulty: Difficulty): string {
+  return `alchemists-cauldron.${difficulty}`;
+}
+
+function isDifficulty(value: unknown): value is Difficulty {
+  return value === "easy" || value === "medium" || value === "hard";
+}
+
+function toEntry(
+  value: unknown,
+  listDifficulty: Difficulty,
+): LeaderboardEntry | null {
   if (typeof value !== "object" || value === null) {
-    return false;
+    return null;
   }
 
   const entry = value as {
     name?: unknown;
     score?: unknown;
     playedAt?: unknown;
+    difficulty?: unknown;
   };
 
-  return (
-    typeof entry.name === "string" &&
-    typeof entry.score === "number" &&
-    Number.isFinite(entry.score) &&
-    typeof entry.playedAt === "number" &&
-    Number.isFinite(entry.playedAt)
-  );
+  if (
+    typeof entry.name !== "string" ||
+    typeof entry.score !== "number" ||
+    !Number.isFinite(entry.score) ||
+    typeof entry.playedAt !== "number" ||
+    !Number.isFinite(entry.playedAt)
+  ) {
+    return null;
+  }
+
+  const difficulty = isDifficulty(entry.difficulty)
+    ? entry.difficulty
+    : listDifficulty;
+  if (difficulty !== listDifficulty) {
+    return null;
+  }
+
+  return {
+    name: entry.name,
+    score: entry.score,
+    playedAt: entry.playedAt,
+    difficulty,
+  };
 }
 
-export function loadLeaderboard(): LeaderboardEntry[] {
+function readEntries(raw: string, difficulty: Difficulty): LeaderboardEntry[] {
+  const parsed: unknown = JSON.parse(raw);
+  if (!Array.isArray(parsed)) {
+    return [];
+  }
+
+  const entries: LeaderboardEntry[] = [];
+  for (const value of parsed) {
+    const entry = toEntry(value, difficulty);
+    if (entry) {
+      entries.push(entry);
+    }
+  }
+
+  return entries.sort(compareEntries).slice(0, TOP_SIZE);
+}
+
+export function loadLeaderboard(difficulty: Difficulty): LeaderboardEntry[] {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (raw === null) {
+    const raw = localStorage.getItem(storageKey(difficulty));
+    if (raw !== null) {
+      return readEntries(raw, difficulty);
+    }
+
+    if (difficulty !== "medium") {
       return [];
     }
 
-    const parsed: unknown = JSON.parse(raw);
-    if (!Array.isArray(parsed)) {
+    const legacy = localStorage.getItem(LEGACY_MEDIUM_KEY);
+    if (legacy === null) {
       return [];
     }
 
-    return parsed.filter(isStoredEntry).sort(compareEntries).slice(0, TOP_SIZE);
+    const entries = readEntries(legacy, "medium");
+    if (saveLeaderboard(entries)) {
+      try {
+        localStorage.removeItem(LEGACY_MEDIUM_KEY);
+      } catch {
+        return entries;
+      }
+    }
+
+    return entries;
   } catch {
     return [];
   }
 }
 
 function saveLeaderboard(entries: readonly LeaderboardEntry[]): boolean {
+  const difficulty = entries[0]?.difficulty;
+  if (!difficulty) {
+    return true;
+  }
+
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+    localStorage.setItem(storageKey(difficulty), JSON.stringify(entries));
     return true;
   } catch {
     return false;
@@ -58,6 +122,7 @@ function saveLeaderboard(entries: readonly LeaderboardEntry[]): boolean {
 export function addScore(
   name: string,
   score: number,
+  difficulty: Difficulty,
   playedAt = Date.now(),
 ): boolean {
   if (!isValidName(name) || !Number.isFinite(score)) {
@@ -65,13 +130,21 @@ export function addScore(
   }
 
   return saveLeaderboard(
-    insertEntry(loadLeaderboard(), { name, score, playedAt }),
+    insertEntry(loadLeaderboard(difficulty), {
+      name,
+      score,
+      playedAt,
+      difficulty,
+    }),
   );
 }
 
-export function clearLeaderboard(): boolean {
+export function clearLeaderboard(difficulty: Difficulty): boolean {
   try {
-    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(storageKey(difficulty));
+    if (difficulty === "medium") {
+      localStorage.removeItem(LEGACY_MEDIUM_KEY);
+    }
     return true;
   } catch {
     return false;
