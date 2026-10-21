@@ -14,3 +14,14 @@ export function createStock(
 
   return stock;
 }
+
+export function isOutOfIngredients(
+  shelfStock: Record<string, number>,
+  cauldronCount: number,
+): boolean {
+  if (cauldronCount > 0) {
+    return false;
+  }
+
+  return Object.values(shelfStock).every((stock) => stock <= 0);
+}

@@ -166,6 +166,80 @@ h2 {
   font-weight: 700;
 }
 
+.game-field,
+.game-over {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.timer {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.timer-value {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.4rem;
+}
+
+.timer-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #3a2e28;
+  overflow: hidden;
+}
+
+.timer-fill {
+  width: 0;
+  height: 100%;
+  background: #e7c56a;
+}
+
+.timer.is-urgent .timer-value {
+  color: #ff5a4a;
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+
+.timer.is-urgent .timer-fill {
+  background: #ff5a4a;
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+
+.lives {
+  display: flex;
+  gap: 8px;
+}
+
+.life {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #c4492c;
+}
+
+.life.is-spent {
+  background: #4a3b34;
+}
+
+.game-over-reason,
+.game-over-score {
+  margin: 0;
+  text-align: center;
+}
+
+@keyframes timer-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
 .shelf,
 .cauldron {
   width: 100%;

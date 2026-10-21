@@ -5,9 +5,11 @@ import { addIngredient } from "../logic/add-ingredient";
 import { isBrewSuccess } from "../logic/brew-check";
 import { calculateCauldron } from "../logic/calculate-cauldron";
 import { pickRecipe } from "../logic/recipe-generator";
-import { createStock } from "../logic/stock";
+import { createStock, isOutOfIngredients } from "../logic/stock";
+import { remainingSeconds } from "../logic/timer";
 
 export type BrewResult = "success" | "failure" | null;
+export type GameOverReason = "time" | "lives" | "ingredients";
 
 export interface GameState {
   started: boolean;
@@ -20,6 +22,8 @@ export interface GameState {
   timeLeft: number;
   lives: number;
   lastBrew: BrewResult;
+  endAt: number | null;
+  gameOverReason: GameOverReason | null;
 }
 
 export function createInitialState(): GameState {
@@ -41,10 +45,14 @@ export function createInitialState(): GameState {
     timeLeft: 0,
     lives: 0,
     lastBrew: null,
+    endAt: null,
+    gameOverReason: null,
   };
 }
 
-export function startGame(state: GameState): GameState {
+export function startGame(state: GameState, now = Date.now()): GameState {
+  const timeLeft = LEVEL_ONE.startingTime;
+
   return {
     ...state,
     started: true,
@@ -52,14 +60,57 @@ export function startGame(state: GameState): GameState {
     shelfStock: createStock(state.shelf),
     activeRecipe: pickRecipe(LEVEL_ONE.difficulty),
     score: 0,
-    timeLeft: LEVEL_ONE.startingTime,
+    timeLeft,
     lives: LEVEL_ONE.lives,
     lastBrew: null,
+    endAt: now + timeLeft * 1000,
+    gameOverReason: null,
   };
 }
 
+export function finishGame(
+  state: GameState,
+  reason: GameOverReason,
+): GameState {
+  return {
+    ...state,
+    endAt: null,
+    gameOverReason: reason,
+    timeLeft: reason === "time" ? 0 : state.timeLeft,
+  };
+}
+
+function settle(state: GameState): GameState {
+  if (state.gameOverReason) {
+    return state;
+  }
+
+  if (state.lives <= 0) {
+    return finishGame(state, "lives");
+  }
+
+  if (isOutOfIngredients(state.shelfStock, state.cauldronIngredients.length)) {
+    return finishGame(state, "ingredients");
+  }
+
+  return state;
+}
+
+export function syncTime(state: GameState, now: number): GameState {
+  if (!state.started || state.gameOverReason || state.endAt === null) {
+    return state;
+  }
+
+  const timeLeft = remainingSeconds(state.endAt, now);
+  if (timeLeft <= 0) {
+    return finishGame({ ...state, timeLeft: 0 }, "time");
+  }
+
+  return { ...state, timeLeft };
+}
+
 export function addToCauldron(state: GameState, id: string): GameState {
-  if (!state.started || state.lives <= 0) {
+  if (!state.started || state.gameOverReason || state.lives <= 0) {
     return state;
   }
 
@@ -71,41 +122,47 @@ export function addToCauldron(state: GameState, id: string): GameState {
   };
 }
 
-export function brewPotion(state: GameState): GameState {
+export function brewPotion(state: GameState, now = Date.now()): GameState {
+  const current = syncTime(state, now);
+
   if (
-    !state.started ||
-    !state.activeRecipe ||
-    state.lives <= 0 ||
-    state.cauldronIngredients.length === 0
+    !current.started ||
+    current.gameOverReason ||
+    !current.activeRecipe ||
+    current.lives <= 0 ||
+    current.cauldronIngredients.length === 0
   ) {
-    return state;
+    return current;
   }
 
-  const values = calculateCauldron(state.cauldronIngredients);
+  const values = calculateCauldron(current.cauldronIngredients);
   const success = isBrewSuccess(
     values,
-    state.activeRecipe,
+    current.activeRecipe,
     LEVEL_ONE.tolerance,
   );
 
   if (success) {
-    return {
-      ...state,
-      score: state.score + LEVEL_ONE.scorePerBrew,
-      timeLeft: Math.min(
-        LEVEL_ONE.startingTime,
-        state.timeLeft + LEVEL_ONE.timeBonus,
-      ),
+    const timeLeft = Math.min(
+      LEVEL_ONE.startingTime,
+      current.timeLeft + LEVEL_ONE.timeBonus,
+    );
+
+    return settle({
+      ...current,
+      score: current.score + LEVEL_ONE.scorePerBrew,
+      timeLeft,
+      endAt: now + timeLeft * 1000,
       cauldronIngredients: [],
       activeRecipe: pickRecipe(LEVEL_ONE.difficulty),
       lastBrew: "success",
-    };
+    });
   }
 
-  return {
-    ...state,
-    lives: state.lives - 1,
+  return settle({
+    ...current,
+    lives: current.lives - 1,
     cauldronIngredients: [],
     lastBrew: "failure",
-  };
+  });
 }
