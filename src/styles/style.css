@@ -222,12 +222,20 @@ h2 {
 }
 
 .game-field,
-.game-over {
+.game-over,
+.leaderboard {
   width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 16px;
+}
+
+.game-field[hidden],
+.game-over[hidden],
+.leaderboard[hidden],
+.name-form[hidden] {
+  display: none !important;
 }
 
 .timer {
@@ -284,8 +292,76 @@ h2 {
 }
 
 .game-over-reason,
-.game-over-score {
+.game-over-score,
+.board-message,
+.name-error {
   margin: 0;
+  text-align: center;
+}
+
+.name-error:empty,
+.board-message:empty {
+  display: none;
+}
+
+.name-form {
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.name-label {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.name-input {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  padding: 10px 12px;
+  border: 1px solid #6b5344;
+  border-radius: 8px;
+  background: #1b1714;
+}
+
+.name-error {
+  color: #ff5a4a;
+}
+
+.game-over-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.leaderboard-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #3a2e28;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.leaderboard h2,
+.game-over h2 {
   text-align: center;
 }
 
