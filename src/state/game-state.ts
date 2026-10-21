@@ -2,6 +2,7 @@ import { DIFFICULTY_SETTINGS } from "../data/difficulty";
 import { INGREDIENTS, type IIngredient } from "../data/ingredients";
 import type { Difficulty, IRecipe } from "../data/recipes";
 import { addIngredient } from "../logic/add-ingredient";
+import type { SavedGame } from "../logic/game-save";
 import { isBrewSuccess } from "../logic/brew-check";
 import { calculateCauldron } from "../logic/calculate-cauldron";
 import { pickRecipe } from "../logic/recipe-generator";
@@ -122,6 +123,33 @@ export function resumeGame(state: GameState, now = Date.now()): GameState {
 
 export function exitToMenu(state: GameState): GameState {
   return createInitialState(state.difficulty);
+}
+
+export function continueGame(save: SavedGame): GameState {
+  const settings = DIFFICULTY_SETTINGS[save.difficulty];
+  const shelf = INGREDIENTS.slice(0, settings.shelfCount);
+  const shelfStock: Record<string, number> = {};
+
+  for (const ingredient of shelf) {
+    shelfStock[ingredient.id] = save.shelfStock[ingredient.id] ?? 0;
+  }
+
+  return {
+    started: true,
+    difficulty: save.difficulty,
+    shelf,
+    cauldronIngredients: [...save.cauldronIngredients],
+    shelfStock,
+    maxInCauldron: settings.maxInCauldron,
+    activeRecipe: save.activeRecipe,
+    score: save.score,
+    timeLeft: Math.min(settings.startingTime, save.timeLeft),
+    lives: save.lives,
+    lastBrew: null,
+    endAt: null,
+    gameOverReason: null,
+    paused: true,
+  };
 }
 
 export function finishGame(

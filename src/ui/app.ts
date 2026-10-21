@@ -7,6 +7,7 @@ import {
 import { calculateCauldron } from "../logic/calculate-cauldron";
 import { isTopTenScore, isValidName } from "../logic/leaderboard";
 import { formatTime, isUrgent, timerPercent } from "../logic/timer";
+import { clearSave, loadGame, saveGame } from "../storage/game-save";
 import {
   addScore,
   clearLeaderboard,
@@ -15,6 +16,7 @@ import {
 import {
   addToCauldron,
   brewPotion,
+  continueGame,
   createInitialState,
   exitToMenu,
   pauseGame,
@@ -55,6 +57,7 @@ export function renderApp(root: HTMLElement): void {
   let state = createInitialState();
   let showLeaderboard = false;
   let scoreSaved = false;
+  let hasContinue = loadGame() !== null;
 
   const title = document.createElement("h1");
   title.textContent = "Alchemist's Cauldron";
@@ -104,6 +107,11 @@ export function renderApp(root: HTMLElement): void {
   const result = document.createElement("p");
   result.className = "brew-result";
 
+  const continueButton = document.createElement("button");
+  continueButton.type = "button";
+  continueButton.className = "start-button";
+  continueButton.textContent = "Continue Game";
+
   const start = document.createElement("button");
   start.type = "button";
   start.className = "start-button";
@@ -144,6 +152,7 @@ export function renderApp(root: HTMLElement): void {
     status,
     timer,
     lives,
+    continueButton,
     start,
     helpButton,
     settingsButton,
@@ -290,7 +299,7 @@ export function renderApp(root: HTMLElement): void {
   for (const text of [
     "Add ingredients from the shelf until Temperature, Density and Magic Power fit the recipe. Brew allows a tolerance around each range.",
     "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life.",
-    "The run ends when time runs out, lives reach 0, or the shelf and the cauldron are both empty. Pause stops the clock.",
+    "The run ends when time runs out, lives reach 0, or the shelf and the cauldron are both empty. Pause stops the clock. An unfinished game can be continued after the page is reloaded.",
   ]) {
     const paragraph = document.createElement("p");
     paragraph.className = "rules-text";
@@ -356,6 +365,7 @@ export function renderApp(root: HTMLElement): void {
     gameOver.hidden = !over || showLeaderboard;
     board.hidden = !showLeaderboard;
     status.textContent = state.started ? `Score ${state.score}` : "Score 0";
+    continueButton.hidden = state.started || !hasContinue;
     start.hidden = state.started;
     helpButton.hidden = state.started;
     settingsButton.hidden = state.started;
@@ -412,6 +422,7 @@ export function renderApp(root: HTMLElement): void {
     renderBars(bars, calculateCauldron(state.cauldronIngredients), recipe);
     renderShelf(shelf, state, (id) => {
       state = addToCauldron(state, id);
+      remember();
       paint();
     });
     renderCauldron(cauldron, state.cauldronIngredients);
@@ -424,30 +435,60 @@ export function renderApp(root: HTMLElement): void {
     }
   };
 
+  const remember = (): void => {
+    if (!state.started) {
+      return;
+    }
+
+    saveGame(state);
+    hasContinue = state.gameOverReason === null;
+  };
+
   const beginRun = (): void => {
     scoreSaved = false;
     showLeaderboard = false;
     nameInput.value = "";
     nameError.textContent = "";
     state = startGame(state);
+    remember();
     paint();
   };
 
   start.addEventListener("click", beginRun);
   playAgain.addEventListener("click", beginRun);
 
+  continueButton.addEventListener("click", () => {
+    const save = loadGame();
+    if (!save) {
+      hasContinue = false;
+      paint();
+      return;
+    }
+
+    scoreSaved = false;
+    showLeaderboard = false;
+    nameInput.value = "";
+    nameError.textContent = "";
+    state = continueGame(save);
+    remember();
+    paint();
+  });
+
   brew.addEventListener("click", () => {
     state = brewPotion(state);
+    remember();
     paint();
   });
 
   pause.addEventListener("click", () => {
     state = pauseGame(state);
+    remember();
     paint();
   });
 
   resume.addEventListener("click", () => {
     state = resumeGame(state);
+    remember();
     paint();
   });
 
@@ -456,6 +497,7 @@ export function renderApp(root: HTMLElement): void {
     showLeaderboard = false;
     nameInput.value = "";
     nameError.textContent = "";
+    hasContinue = !clearSave() && loadGame() !== null;
     state = exitToMenu(state);
     paint();
   });
@@ -565,7 +607,17 @@ export function renderApp(root: HTMLElement): void {
     }
 
     state = next;
+    remember();
     paint();
+  });
+
+  window.addEventListener("pagehide", () => {
+    if (!state.started) {
+      return;
+    }
+
+    state = syncTime(state, Date.now());
+    saveGame(state);
   });
 
   const watch = (): void => {
@@ -579,6 +631,7 @@ export function renderApp(root: HTMLElement): void {
     state = next;
 
     if (state.gameOverReason) {
+      remember();
       paint();
       return;
     }

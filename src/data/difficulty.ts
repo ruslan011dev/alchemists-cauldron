@@ -1,4 +1,4 @@
-import type { Difficulty } from "./recipes";
+export type Difficulty = "easy" | "medium" | "hard";
 
 export interface DifficultySettings {
   difficulty: Difficulty;
