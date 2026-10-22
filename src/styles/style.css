@@ -1,0 +1,455 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  min-height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+  font-family: Georgia, "Times New Roman", serif;
+  background: #1b1714;
+  color: #f3e6d0;
+}
+
+#app {
+  width: min(960px, 100%);
+  min-height: 100vh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 24px 16px 40px;
+}
+
+.logo {
+  width: 64px;
+  height: 64px;
+}
+
+h1,
+h2 {
+  margin: 0;
+  text-align: center;
+}
+
+h1 {
+  font-size: clamp(1.6rem, 4vw, 2.2rem);
+  font-weight: 600;
+}
+
+h2 {
+  width: 100%;
+  font-size: 1.2rem;
+  text-align: left;
+}
+
+.status-line,
+.recipe-name {
+  margin: 0;
+  text-align: center;
+}
+
+.bars {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.bar-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+  font-size: 0.95rem;
+}
+
+.bar-track {
+  position: relative;
+  height: 14px;
+  border-radius: 999px;
+  background: #3a2e28;
+  transition: box-shadow 0.35s ease;
+}
+
+.bar.is-in-range .bar-track {
+  box-shadow: 0 0 14px #3ddc97;
+}
+
+.bar-zone,
+.bar-zero,
+.bar-marker {
+  position: absolute;
+  top: 0;
+}
+
+.bar-zone {
+  height: 100%;
+  border-radius: 999px;
+  background: rgb(61 220 151 / 35%);
+}
+
+.bar-zero {
+  width: 2px;
+  height: 100%;
+  background: #f3e6d0;
+  transform: translateX(-50%);
+}
+
+.bar-marker {
+  width: 4px;
+  height: 22px;
+  margin-top: -4px;
+  border-radius: 999px;
+  background: #f3e6d0;
+  transform: translateX(-50%);
+  transition: left 0.35s ease;
+}
+
+.start-button,
+.pause-button,
+.pause-exit,
+.shelf-card {
+  font: inherit;
+  color: inherit;
+}
+
+.start-button,
+.brew-button {
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 28px;
+  background: #c4492c;
+  color: #fff8ee;
+  cursor: pointer;
+}
+
+.start-button,
+.pause-button {
+  align-self: center;
+}
+
+.pause-button,
+.pause-exit {
+  border: 1px solid #6b5344;
+  border-radius: 999px;
+  background: transparent;
+  cursor: pointer;
+}
+
+.pause-button {
+  padding: 8px 22px;
+}
+
+.pause-exit {
+  width: 100%;
+  padding: 12px 28px;
+}
+
+.game-field.is-paused {
+  filter: blur(12px);
+  pointer-events: none;
+  user-select: none;
+}
+
+.pause-dialog {
+  width: min(360px, calc(100% - 32px));
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.pause-dialog::backdrop {
+  background: rgb(12 9 8 / 55%);
+}
+
+.pause-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 28px 24px;
+  border: 1px solid #6b5344;
+  border-radius: 16px;
+  background: #241c18;
+}
+
+.pause-card h2,
+.pause-card .start-button {
+  width: 100%;
+  text-align: center;
+}
+
+.brew-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.recipe-panel {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  border: 1px solid #6b5344;
+  border-radius: 16px;
+  background: #241c18;
+}
+
+.recipe-title {
+  text-align: center;
+}
+
+.recipe-ranges,
+.ingredient-counter,
+.brew-result {
+  margin: 0;
+  text-align: center;
+}
+
+.ingredient-counter.is-full {
+  color: #ffcf70;
+  font-weight: 700;
+}
+
+.game-field,
+.game-over,
+.leaderboard {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.game-field[hidden],
+.game-over[hidden],
+.leaderboard[hidden],
+.name-form[hidden] {
+  display: none !important;
+}
+
+.timer {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.timer-value {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.4rem;
+}
+
+.timer-track {
+  width: 100%;
+  height: 10px;
+  border-radius: 999px;
+  background: #3a2e28;
+  overflow: hidden;
+}
+
+.timer-fill {
+  width: 0;
+  height: 100%;
+  background: #e7c56a;
+}
+
+.timer.is-urgent .timer-value {
+  color: #ff5a4a;
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+
+.timer.is-urgent .timer-fill {
+  background: #ff5a4a;
+  animation: timer-pulse 1s ease-in-out infinite;
+}
+
+.lives {
+  display: flex;
+  gap: 8px;
+}
+
+.life {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #c4492c;
+}
+
+.life.is-spent {
+  background: #4a3b34;
+}
+
+.game-over-reason,
+.game-over-score,
+.board-message,
+.name-error {
+  margin: 0;
+  text-align: center;
+}
+
+.name-error:empty,
+.board-message:empty {
+  display: none;
+}
+
+.name-form {
+  width: min(360px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.name-label {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  text-align: center;
+}
+
+.name-input {
+  width: 100%;
+  font: inherit;
+  color: inherit;
+  padding: 10px 12px;
+  border: 1px solid #6b5344;
+  border-radius: 8px;
+  background: #1b1714;
+}
+
+.name-error {
+  color: #ff5a4a;
+}
+
+.game-over-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+.leaderboard-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.leaderboard-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.leaderboard-table th,
+.leaderboard-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #3a2e28;
+  text-align: left;
+  overflow-wrap: anywhere;
+}
+
+.leaderboard h2,
+.game-over h2 {
+  text-align: center;
+}
+
+@keyframes timer-pulse {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.shelf,
+.cauldron {
+  width: 100%;
+}
+
+.shelf {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 12px;
+}
+
+.shelf-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 180px;
+  padding: 28px 10px 12px;
+  border: 1px solid #6b5344;
+  border-radius: 16px;
+  background: #2a211c;
+  cursor: pointer;
+}
+
+.shelf-card img {
+  width: 48px;
+  height: 48px;
+}
+
+.shelf-name {
+  text-align: center;
+  font-size: 0.95rem;
+}
+
+.shelf-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 0.8rem;
+}
+
+.shelf-stat {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.stock-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #c4492c;
+  color: #fff8ee;
+  font-size: 0.85rem;
+}
+
+.shelf-card.is-empty,
+.shelf-card.is-blocked {
+  cursor: default;
+}
+
+.shelf-card.is-empty {
+  opacity: 0.45;
+}
+
+.cauldron-empty {
+  margin: 0;
+}
+
+.cauldron-list {
+  margin: 0;
+  padding-left: 1.2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
