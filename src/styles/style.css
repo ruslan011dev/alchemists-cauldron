@@ -392,6 +392,16 @@ h2 {
   width: 100%;
 }
 
+.cauldron {
+  min-height: 4.5rem;
+  border-radius: 16px;
+}
+
+.cauldron.is-drop-target {
+  outline: 2px dashed #e7c56a;
+  background: rgb(231 197 106 / 16%);
+}
+
 .shelf {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
@@ -415,6 +425,11 @@ h2 {
 .shelf-card img {
   width: 48px;
   height: 48px;
+  pointer-events: none;
+}
+
+.shelf-card[draggable="true"] {
+  cursor: grab;
 }
 
 .shelf-name {

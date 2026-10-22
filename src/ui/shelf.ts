@@ -1,5 +1,6 @@
 import type { IIngredient } from "../data/ingredients";
-import type { GameState } from "../state/game-state";
+import { canAddIngredient, type GameState } from "../state/game-state";
+import { armIngredientDrag, shouldIgnoreDragClick } from "./drag";
 import { formatSigned } from "./format";
 
 function appendStat(parent: HTMLElement, label: string, value: number): void {
@@ -36,7 +37,9 @@ function createCard(
     button.classList.add("is-blocked");
   }
 
-  button.disabled = empty || blocked;
+  const canDrag = !empty && !blocked;
+  button.draggable = canDrag;
+  button.disabled = !canDrag;
   if (button.disabled) {
     button.tabIndex = -1;
   }
@@ -50,6 +53,7 @@ function createCard(
     const icon = document.createElement("img");
     icon.src = ingredient.icon;
     icon.alt = "";
+    icon.draggable = false;
     icon.width = 48;
     icon.height = 48;
 
@@ -64,7 +68,13 @@ function createCard(
     appendStat(stats, "Magic", ingredient.magicPower);
 
     button.append(icon, name, stats);
+    if (canDrag) {
+      armIngredientDrag(button, ingredient.id);
+    }
     button.addEventListener("click", () => {
+      if (shouldIgnoreDragClick(button)) {
+        return;
+      }
       onAdd(ingredient.id);
     });
   } else {
@@ -81,10 +91,7 @@ export function renderShelf(
 ): void {
   parent.replaceChildren();
 
-  const blocked =
-    state.paused ||
-    state.cauldronIngredients.length >= state.maxInCauldron ||
-    (state.started && state.lives <= 0);
+  const blocked = state.started && !canAddIngredient(state);
 
   for (const ingredient of state.shelf) {
     const stock = state.shelfStock[ingredient.id] ?? 0;

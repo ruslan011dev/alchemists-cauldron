@@ -199,17 +199,26 @@ export function syncTime(state: GameState, now: number): GameState {
   return { ...state, timeLeft };
 }
 
+export function canAddIngredient(state: GameState): boolean {
+  return (
+    state.started &&
+    !state.paused &&
+    state.gameOverReason === null &&
+    state.lives > 0 &&
+    state.cauldronIngredients.length < state.maxInCauldron
+  );
+}
+
 export function addToCauldron(state: GameState, id: string): GameState {
-  if (
-    !state.started ||
-    state.paused ||
-    state.gameOverReason ||
-    state.lives <= 0
-  ) {
+  if (!canAddIngredient(state)) {
     return state;
   }
 
   const next = addIngredient(state, state.shelf, id);
+  if (next === state) {
+    return state;
+  }
+
   return {
     ...state,
     cauldronIngredients: next.cauldronIngredients,

@@ -16,6 +16,7 @@ import {
 import {
   addToCauldron,
   brewPotion,
+  canAddIngredient,
   continueGame,
   createInitialState,
   exitToMenu,
@@ -29,6 +30,7 @@ import {
 } from "../state/game-state";
 import { renderBars } from "./bars";
 import { renderCauldron } from "./cauldron";
+import { bindCauldronDrop, suppressNextClick } from "./drag";
 import { formatRange } from "./format";
 import { renderLeaderboard } from "./leaderboard";
 import { renderShelf } from "./shelf";
@@ -297,7 +299,7 @@ export function renderApp(root: HTMLElement): void {
   helpClose.className = "start-button";
   helpClose.textContent = "Close";
   for (const text of [
-    "Add ingredients from the shelf until Temperature, Density and Magic Power fit the recipe. Brew allows a tolerance around each range.",
+    "Click an ingredient or drag it into the cauldron until Temperature, Density and Magic Power fit the recipe. Brew allows a tolerance around each range.",
     "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life.",
     "The run ends when time runs out, lives reach 0, or the shelf and the cauldron are both empty. Pause stops the clock. An unfinished game can be continued after the page is reloaded.",
   ]) {
@@ -426,6 +428,9 @@ export function renderApp(root: HTMLElement): void {
       paint();
     });
     renderCauldron(cauldron, state.cauldronIngredients);
+    if (!canAddIngredient(state)) {
+      cauldron.classList.remove("is-drop-target");
+    }
 
     if (state.paused && !pauseDialog.open) {
       pauseDialog.showModal();
@@ -453,6 +458,22 @@ export function renderApp(root: HTMLElement): void {
     remember();
     paint();
   };
+
+  bindCauldronDrop(
+    cauldron,
+    () => canAddIngredient(state),
+    (id) => {
+      const next = addToCauldron(state, id);
+      if (next === state) {
+        return;
+      }
+
+      suppressNextClick();
+      state = next;
+      remember();
+      paint();
+    },
+  );
 
   start.addEventListener("click", beginRun);
   playAgain.addEventListener("click", beginRun);
