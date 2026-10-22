@@ -1,3 +1,4 @@
+import { difficultyName } from "../data/difficulty";
 import { formatEntryDate, type LeaderboardEntry } from "../logic/leaderboard";
 
 export function renderLeaderboard(
@@ -9,7 +10,7 @@ export function renderLeaderboard(
   if (entries.length === 0) {
     const row = document.createElement("tr");
     const cell = document.createElement("td");
-    cell.colSpan = 4;
+    cell.colSpan = 5;
     cell.textContent = "No results yet.";
     row.append(cell);
     body.append(row);
@@ -22,6 +23,7 @@ export function renderLeaderboard(
       String(index + 1),
       entry.name,
       String(entry.score),
+      difficultyName(entry.difficulty),
       formatEntryDate(entry.playedAt),
     ];
 

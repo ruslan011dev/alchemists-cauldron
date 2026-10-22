@@ -1,4 +1,6 @@
-export type Difficulty = "easy" | "medium" | "hard";
+import type { Difficulty } from "./difficulty";
+
+export type { Difficulty };
 
 export interface IRecipeRange {
   min: number;
