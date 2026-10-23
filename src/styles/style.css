@@ -408,13 +408,19 @@ h2 {
   gap: 12px;
 }
 
+.shelf:hover,
+.shelf:focus-within {
+  position: relative;
+  z-index: 4;
+}
+
 .shelf-card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 8px;
-  min-height: 180px;
+  min-height: 132px;
   padding: 28px 10px 12px;
   border: 1px solid #6b5344;
   border-radius: 16px;
@@ -432,22 +438,62 @@ h2 {
   cursor: grab;
 }
 
+.shelf-card:hover,
+.shelf-card:focus-visible {
+  z-index: 1;
+}
+
 .shelf-name {
   text-align: center;
   font-size: 0.95rem;
-}
-
-.shelf-stats {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 0.8rem;
 }
 
 .shelf-stat {
   display: flex;
   justify-content: space-between;
   gap: 8px;
+}
+
+.tooltip {
+  position: absolute;
+  z-index: 2;
+  top: 0;
+  left: calc(100% + 8px);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  width: max-content;
+  padding: 8px 10px;
+  border: 1px solid #e7c56a;
+  border-radius: 12px;
+  background: #241c18;
+  font-size: 0.8rem;
+  text-align: left;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.tooltip .shelf-stat {
+  width: 100%;
+}
+
+.shelf-card:hover .tooltip,
+.shelf-card:focus-visible .tooltip {
+  visibility: visible;
+}
+
+.game-field.is-paused .tooltip {
+  visibility: hidden;
+}
+
+.tooltip--left {
+  left: auto;
+  right: calc(100% + 8px);
+}
+
+.tooltip--up {
+  top: auto;
+  bottom: 0;
 }
 
 .stock-badge {

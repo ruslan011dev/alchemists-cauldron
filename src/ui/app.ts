@@ -299,7 +299,7 @@ export function renderApp(root: HTMLElement): void {
   helpClose.className = "start-button";
   helpClose.textContent = "Close";
   for (const text of [
-    "Click an ingredient or drag it into the cauldron until Temperature, Density and Magic Power fit the recipe. Brew allows a tolerance around each range.",
+    "Click an ingredient or drag it into the cauldron until Temperature, Density and Magic Power fit the recipe. Hover a card to see those three numbers. Brew allows a tolerance around each range.",
     "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life.",
     "The run ends when time runs out, lives reach 0, or the shelf and the cauldron are both empty. Pause stops the clock. An unfinished game can be continued after the page is reloaded.",
   ]) {
