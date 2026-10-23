@@ -1,22 +1,7 @@
 import type { IIngredient } from "../data/ingredients";
 import { canAddIngredient, type GameState } from "../state/game-state";
 import { armIngredientDrag, shouldIgnoreDragClick } from "./drag";
-import { formatSigned } from "./format";
-
-function appendStat(parent: HTMLElement, label: string, value: number): void {
-  const stat = document.createElement("span");
-  stat.className = "shelf-stat";
-
-  const name = document.createElement("span");
-  name.className = "shelf-stat-label";
-  name.textContent = label;
-
-  const number = document.createElement("span");
-  number.textContent = formatSigned(value);
-
-  stat.append(name, number);
-  parent.append(stat);
-}
+import { createIngredientTooltip, placeTooltip } from "./tooltip";
 
 function createCard(
   ingredient: IIngredient,
@@ -39,9 +24,12 @@ function createCard(
 
   const canDrag = !empty && !blocked;
   button.draggable = canDrag;
-  button.disabled = !canDrag;
-  if (button.disabled) {
+  button.disabled = empty;
+  if (!canDrag) {
     button.tabIndex = -1;
+  }
+  if (blocked && !empty) {
+    button.setAttribute("aria-disabled", "true");
   }
 
   const badge = document.createElement("span");
@@ -61,18 +49,25 @@ function createCard(
     name.className = "shelf-name";
     name.textContent = ingredient.name;
 
-    const stats = document.createElement("span");
-    stats.className = "shelf-stats";
-    appendStat(stats, "Temperature", ingredient.temperature);
-    appendStat(stats, "Density", ingredient.density);
-    appendStat(stats, "Magic", ingredient.magicPower);
-
-    button.append(icon, name, stats);
+    const tooltip = createIngredientTooltip(ingredient);
+    button.setAttribute("aria-describedby", tooltip.id);
+    button.append(icon, name, tooltip);
+    const showTooltip = (): void => {
+      tooltip.setAttribute("aria-hidden", "false");
+      placeTooltip(button, tooltip);
+    };
+    const hideTooltip = (): void => {
+      tooltip.setAttribute("aria-hidden", "true");
+    };
+    button.addEventListener("mouseenter", showTooltip);
+    button.addEventListener("focus", showTooltip);
+    button.addEventListener("mouseleave", hideTooltip);
+    button.addEventListener("blur", hideTooltip);
     if (canDrag) {
       armIngredientDrag(button, ingredient.id);
     }
     button.addEventListener("click", () => {
-      if (shouldIgnoreDragClick(button)) {
+      if (blocked || shouldIgnoreDragClick(button)) {
         return;
       }
       onAdd(ingredient.id);
