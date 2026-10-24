@@ -71,6 +71,10 @@ export function renderApp(root: HTMLElement): void {
   logo.width = 64;
   logo.height = 64;
 
+  const masthead = document.createElement("header");
+  masthead.className = "masthead";
+  masthead.append(logo, title);
+
   const field = document.createElement("div");
   field.className = "game-field";
 
@@ -142,32 +146,44 @@ export function renderApp(root: HTMLElement): void {
   const bars = document.createElement("div");
   bars.className = "bars";
   const shelfTitle = document.createElement("h2");
+  shelfTitle.className = "panel-title";
   shelfTitle.textContent = "Shelf";
   const shelf = document.createElement("div");
   shelf.className = "shelf";
   const cauldronTitle = document.createElement("h2");
+  cauldronTitle.className = "panel-title";
   cauldronTitle.textContent = "Cauldron";
   const cauldron = document.createElement("div");
   cauldron.className = "cauldron";
 
-  field.append(
-    status,
-    timer,
-    lives,
+  const hud = document.createElement("div");
+  hud.className = "hud";
+  hud.append(status, timer, lives);
+
+  const menu = document.createElement("div");
+  menu.className = "menu-row";
+  menu.append(
     continueButton,
     start,
     helpButton,
     settingsButton,
     openBoard,
     pause,
-    recipePanel,
-    result,
-    bars,
-    shelfTitle,
-    shelf,
-    cauldronTitle,
-    cauldron,
   );
+
+  const shelfPanel = document.createElement("section");
+  shelfPanel.className = "panel";
+  shelfPanel.append(shelfTitle, shelf);
+
+  const bench = document.createElement("section");
+  bench.className = "panel bench";
+  bench.append(bars, cauldronTitle, cauldron);
+
+  const workspace = document.createElement("div");
+  workspace.className = "workspace";
+  workspace.append(shelfPanel, bench);
+
+  field.append(hud, menu, recipePanel, result, workspace);
 
   const pauseDialog = document.createElement("dialog");
   pauseDialog.className = "pause-dialog";
@@ -340,8 +356,7 @@ export function renderApp(root: HTMLElement): void {
   settingsDialog.setAttribute("aria-labelledby", "settings-title");
 
   root.replaceChildren(
-    logo,
-    title,
+    masthead,
     field,
     pauseDialog,
     gameOver,
