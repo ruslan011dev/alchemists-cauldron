@@ -245,7 +245,29 @@ h1 {
   background: rgb(228 193 106 / 12%);
 }
 
-.brew-button:disabled {
+.recipe-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+}
+
+.pour-button {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 12px 22px;
+  background: rgb(255 244 220 / 4%);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.pour-button:hover:not(:disabled) {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.brew-button:disabled,
+.pour-button:disabled {
   opacity: 0.45;
   cursor: default;
   box-shadow: none;

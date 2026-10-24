@@ -22,6 +22,7 @@ import {
   createInitialState,
   exitToMenu,
   pauseGame,
+  pourOut,
   resumeGame,
   selectDifficulty,
   startGame,
@@ -109,7 +110,14 @@ export function renderApp(root: HTMLElement): void {
   brew.type = "button";
   brew.className = "brew-button";
   brew.textContent = "Brew";
-  recipePanel.append(recipeTitle, ranges, counter, brew);
+  const pour = document.createElement("button");
+  pour.type = "button";
+  pour.className = "pour-button";
+  pour.textContent = "Pour Out";
+  const recipeActions = document.createElement("div");
+  recipeActions.className = "recipe-actions";
+  recipeActions.append(brew, pour);
+  recipePanel.append(recipeTitle, ranges, counter, recipeActions);
 
   const result = document.createElement("p");
   result.className = "brew-result";
@@ -319,7 +327,7 @@ export function renderApp(root: HTMLElement): void {
   helpClose.textContent = "Close";
   for (const text of [
     "Click an ingredient or drag it into the cauldron until Temperature, Density and Magic Power fit the recipe. Hover a card to see those three numbers. Brew allows a tolerance around each range.",
-    "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life. On Medium and Hard, some mixes start a reaction that changes the bars, the clock, or the cauldron. The same mix does not trigger twice until it breaks.",
+    "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life. Pour Out empties the cauldron for 10 seconds, keeps the life, and does not return the ingredients. On Medium and Hard, some mixes start a reaction that changes the bars, the clock, or the cauldron. The same mix does not trigger twice until it breaks.",
     "The run ends when time runs out, lives reach 0, or the shelf and the cauldron are both empty. Pause stops the clock. An unfinished game can be continued after the page is reloaded.",
   ]) {
     const paragraph = document.createElement("p");
@@ -416,6 +424,7 @@ export function renderApp(root: HTMLElement): void {
     counter.textContent = `Ingredients: ${count} / ${state.maxInCauldron}`;
     counter.classList.toggle("is-full", count >= state.maxInCauldron);
     brew.disabled = !playing || count === 0;
+    pour.disabled = !playing || count === 0;
     result.textContent = brewMessage(state);
     updateClock(state.timeLeft, playing);
 
@@ -531,6 +540,12 @@ export function renderApp(root: HTMLElement): void {
 
   brew.addEventListener("click", () => {
     state = brewPotion(state);
+    remember();
+    paint();
+  });
+
+  pour.addEventListener("click", () => {
+    state = pourOut(state);
     remember();
     paint();
   });
