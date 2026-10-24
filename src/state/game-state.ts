@@ -338,3 +338,35 @@ export function brewPotion(state: GameState, now = Date.now()): GameState {
     lastReactionId: null,
   });
 }
+
+const POUR_OUT_COST = 10;
+
+export function pourOut(state: GameState, now = Date.now()): GameState {
+  if (state.paused) {
+    return state;
+  }
+
+  const current = syncTime(state, now);
+  if (
+    !current.started ||
+    current.gameOverReason ||
+    current.cauldronIngredients.length === 0
+  ) {
+    return current;
+  }
+
+  const timeLeft = Math.max(0, current.timeLeft - POUR_OUT_COST);
+  const next: GameState = {
+    ...current,
+    timeLeft,
+    endAt: timeLeft === 0 ? null : now + timeLeft * 1000,
+    cauldronIngredients: [],
+    lastReactionId: null,
+  };
+
+  if (timeLeft === 0) {
+    return finishGame(next, "time");
+  }
+
+  return settle(next);
+}
