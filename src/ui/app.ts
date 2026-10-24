@@ -4,8 +4,9 @@ import {
   DIFFICULTY_SETTINGS,
   difficultyButtonText,
 } from "../data/difficulty";
-import { calculateCauldron } from "../logic/calculate-cauldron";
+import { reactionName } from "../data/reactions";
 import { isTopTenScore, isValidName } from "../logic/leaderboard";
+import { activeReactionNames, cauldronValues } from "../logic/reactions";
 import { formatTime, isUrgent, timerPercent } from "../logic/timer";
 import { clearSave, loadGame, saveGame } from "../storage/game-save";
 import {
@@ -177,7 +178,9 @@ export function renderApp(root: HTMLElement): void {
 
   const bench = document.createElement("section");
   bench.className = "panel bench";
-  bench.append(bars, cauldronTitle, cauldron);
+  const reactionNotice = document.createElement("p");
+  reactionNotice.className = "reaction-notice";
+  bench.append(bars, reactionNotice, cauldronTitle, cauldron);
 
   const workspace = document.createElement("div");
   workspace.className = "workspace";
@@ -316,7 +319,7 @@ export function renderApp(root: HTMLElement): void {
   helpClose.textContent = "Close";
   for (const text of [
     "Click an ingredient or drag it into the cauldron until Temperature, Density and Magic Power fit the recipe. Hover a card to see those three numbers. Brew allows a tolerance around each range.",
-    "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life.",
+    "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life. On Medium and Hard, some mixes start a reaction that changes the bars, the clock, or the cauldron. The same mix does not trigger twice until it breaks.",
     "The run ends when time runs out, lives reach 0, or the shelf and the cauldron are both empty. Pause stops the clock. An unfinished game can be continued after the page is reloaded.",
   ]) {
     const paragraph = document.createElement("p");
@@ -436,7 +439,23 @@ export function renderApp(root: HTMLElement): void {
       boardMessage.hidden = boardMessage.textContent === "";
     }
 
-    renderBars(bars, calculateCauldron(state.cauldronIngredients), recipe);
+    renderBars(
+      bars,
+      cauldronValues(state.cauldronIngredients, state.difficulty),
+      recipe,
+    );
+    const activeNames = activeReactionNames(
+      state.cauldronIngredients,
+      state.difficulty,
+    );
+    const firedName = state.lastReactionId
+      ? reactionName(state.lastReactionId)
+      : null;
+    const reactionLabel =
+      activeNames.length > 0 ? activeNames.join(", ") : firedName;
+    reactionNotice.textContent = reactionLabel
+      ? `Reaction: ${reactionLabel}`
+      : "";
     renderShelf(shelf, state, (id) => {
       state = addToCauldron(state, id);
       remember();
