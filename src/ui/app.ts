@@ -164,6 +164,15 @@ export function renderApp(root: HTMLElement): void {
   cauldronTitle.textContent = "Cauldron";
   const cauldron = document.createElement("div");
   cauldron.className = "cauldron";
+  const cauldronBody = document.createElement("div");
+  cauldronBody.className = "cauldron-body";
+  const burst = document.createElement("div");
+  burst.className = "cauldron-burst";
+  burst.setAttribute("aria-hidden", "true");
+  for (let spark = 0; spark < 8; spark += 1) {
+    burst.append(document.createElement("span"));
+  }
+  cauldron.append(cauldronBody, burst);
 
   const hud = document.createElement("div");
   hud.className = "hud";
@@ -470,7 +479,7 @@ export function renderApp(root: HTMLElement): void {
       remember();
       paint();
     });
-    renderCauldron(cauldron, state.cauldronIngredients);
+    renderCauldron(cauldronBody, state.cauldronIngredients);
     if (!canAddIngredient(state)) {
       cauldron.classList.remove("is-drop-target");
     }
@@ -538,10 +547,55 @@ export function renderApp(root: HTMLElement): void {
     paint();
   });
 
+  const replayAnimation = (element: HTMLElement, className: string): void => {
+    element.classList.remove(
+      "is-brew-success",
+      "is-brew-failure",
+      "is-shaking",
+    );
+    void element.offsetWidth;
+    element.classList.add(className);
+  };
+
+  cauldron.addEventListener("animationend", (event) => {
+    if (event.target !== cauldron) {
+      return;
+    }
+
+    cauldron.classList.remove("is-brew-success", "is-brew-failure");
+  });
+
+  field.addEventListener("animationend", (event) => {
+    if (event.target !== field) {
+      return;
+    }
+
+    field.classList.remove("is-shaking");
+  });
+
   brew.addEventListener("click", () => {
+    const before = state;
     state = brewPotion(state);
     remember();
     paint();
+
+    const brewed =
+      before.cauldronIngredients.length > 0 &&
+      state.cauldronIngredients.length === 0 &&
+      state.lastBrew !== null;
+
+    if (!brewed) {
+      return;
+    }
+
+    if (state.lastBrew === "success") {
+      field.classList.remove("is-shaking");
+      replayAnimation(cauldron, "is-brew-success");
+      return;
+    }
+
+    replayAnimation(cauldron, "is-brew-failure");
+    replayAnimation(field, "is-shaking");
   });
 
   pour.addEventListener("click", () => {

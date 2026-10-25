@@ -428,6 +428,9 @@ h1 {
   height: 100%;
   border-radius: 999px;
   background: rgb(61 204 142 / 40%);
+  transition:
+    left 0.4s ease,
+    width 0.4s ease;
 }
 
 .bar-zero {
@@ -589,6 +592,7 @@ h1 {
 }
 
 .cauldron {
+  position: relative;
   min-height: 9rem;
   padding: 14px;
   border: 1px solid #5c4334;
@@ -596,6 +600,118 @@ h1 {
   background:
     radial-gradient(circle at 50% 125%, rgb(212 83 44 / 32%), transparent 58%),
     #16110e;
+}
+
+.cauldron.is-brew-success {
+  animation: brew-success 0.7s ease-out;
+}
+
+.cauldron.is-brew-failure {
+  animation: brew-fail 0.6s ease-out;
+}
+
+.cauldron-floats {
+  display: flex;
+  justify-content: center;
+  gap: 14px;
+  min-height: 52px;
+  margin-bottom: 10px;
+}
+
+.cauldron-float {
+  width: 42px;
+  height: 42px;
+  animation: ingredient-float 2.6s ease-in-out infinite;
+}
+
+.cauldron-float:nth-child(2) {
+  animation-delay: 0.35s;
+}
+
+.cauldron-float:nth-child(3) {
+  animation-delay: 0.7s;
+}
+
+.cauldron-float:nth-child(4) {
+  animation-delay: 1.05s;
+}
+
+.cauldron-float:nth-child(5) {
+  animation-delay: 1.4s;
+}
+
+.cauldron-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  border-radius: inherit;
+  opacity: 0;
+}
+
+.cauldron.is-brew-failure .cauldron-burst {
+  animation: explosion-flash 0.6s ease-out;
+}
+
+.cauldron-burst span {
+  position: absolute;
+  left: 50%;
+  top: 55%;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--ember);
+  opacity: 0;
+}
+
+.cauldron.is-brew-failure .cauldron-burst span {
+  animation: spark 0.6s ease-out;
+}
+
+.cauldron-burst span:nth-child(1) {
+  --spark-x: -52px;
+  --spark-y: -36px;
+}
+
+.cauldron-burst span:nth-child(2) {
+  --spark-x: 54px;
+  --spark-y: -32px;
+}
+
+.cauldron-burst span:nth-child(3) {
+  --spark-x: -34px;
+  --spark-y: 38px;
+}
+
+.cauldron-burst span:nth-child(4) {
+  --spark-x: 40px;
+  --spark-y: 42px;
+}
+
+.cauldron-burst span:nth-child(5) {
+  --spark-x: 0px;
+  --spark-y: -58px;
+  background: #ffd27a;
+}
+
+.cauldron-burst span:nth-child(6) {
+  --spark-x: -64px;
+  --spark-y: 6px;
+}
+
+.cauldron-burst span:nth-child(7) {
+  --spark-x: 66px;
+  --spark-y: 8px;
+  background: var(--danger);
+}
+
+.cauldron-burst span:nth-child(8) {
+  --spark-x: 6px;
+  --spark-y: 52px;
+  background: #ffd27a;
+}
+
+.game-field.is-shaking {
+  animation: screen-shake 0.45s ease-in-out;
 }
 
 .cauldron.is-drop-target {
@@ -738,6 +854,114 @@ h1 {
 @keyframes timer-pulse {
   50% {
     opacity: 0.45;
+  }
+}
+
+@keyframes ingredient-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-10px);
+  }
+}
+
+@keyframes brew-success {
+  0% {
+    box-shadow: inset 0 0 0 rgb(61 204 142 / 0);
+  }
+
+  35% {
+    box-shadow:
+      inset 0 0 28px rgb(61 204 142 / 55%),
+      0 0 0 6px rgb(61 204 142 / 35%);
+  }
+
+  100% {
+    box-shadow: inset 0 0 0 rgb(61 204 142 / 0);
+  }
+}
+
+@keyframes brew-fail {
+  0%,
+  100% {
+    box-shadow: inset 0 0 0 rgb(255 93 74 / 0);
+  }
+
+  40% {
+    box-shadow: inset 0 0 32px rgb(255 93 74 / 60%);
+  }
+}
+
+@keyframes explosion-flash {
+  0% {
+    opacity: 1;
+    background: radial-gradient(
+      circle,
+      rgb(255 210 120 / 80%),
+      rgb(212 83 44 / 0) 58%
+    );
+  }
+
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes spark {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.3);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translate(
+        calc(-50% + var(--spark-x)),
+        calc(-50% + var(--spark-y))
+      )
+      scale(1.15);
+  }
+}
+
+@keyframes screen-shake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+
+  20% {
+    transform: translateX(-7px);
+  }
+
+  40% {
+    transform: translateX(7px);
+  }
+
+  60% {
+    transform: translateX(-4px);
+  }
+
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cauldron-float,
+  .cauldron.is-brew-success,
+  .cauldron.is-brew-failure,
+  .cauldron.is-brew-failure .cauldron-burst,
+  .cauldron.is-brew-failure .cauldron-burst span,
+  .game-field.is-shaking {
+    animation: none;
+  }
+
+  .bar-marker,
+  .bar-zone {
+    transition: none;
   }
 }
 
