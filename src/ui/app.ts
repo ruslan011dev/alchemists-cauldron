@@ -95,9 +95,18 @@ export function renderApp(root: HTMLElement): void {
 
   const status = document.createElement("p");
   status.className = "status-line";
+  const scoreLabel = document.createElement("span");
+  scoreLabel.className = "stat-label";
+  scoreLabel.textContent = "Score";
+  const scoreValue = document.createElement("span");
+  scoreValue.className = "stat-value";
+  status.append(scoreLabel, scoreValue);
 
   const timer = document.createElement("div");
   timer.className = "timer";
+  const timerLabel = document.createElement("span");
+  timerLabel.className = "stat-label";
+  timerLabel.textContent = "Time";
   const timerValue = document.createElement("span");
   timerValue.className = "timer-value";
   const timerTrack = document.createElement("div");
@@ -105,7 +114,7 @@ export function renderApp(root: HTMLElement): void {
   const timerFill = document.createElement("div");
   timerFill.className = "timer-fill";
   timerTrack.append(timerFill);
-  timer.append(timerValue, timerTrack);
+  timer.append(timerLabel, timerValue, timerTrack);
 
   const lives = document.createElement("div");
   lives.className = "lives";
@@ -222,8 +231,12 @@ export function renderApp(root: HTMLElement): void {
   pauseDialog.className = "pause-dialog";
   const pauseCard = document.createElement("div");
   pauseCard.className = "pause-card";
+  const pauseKicker = document.createElement("p");
+  pauseKicker.className = "screen-kicker";
+  pauseKicker.textContent = "The mixture holds";
   const pauseTitle = document.createElement("h2");
   pauseTitle.id = "pause-title";
+  pauseTitle.className = "pause-heading";
   pauseTitle.textContent = "Game Paused";
   const resume = document.createElement("button");
   resume.type = "button";
@@ -233,7 +246,7 @@ export function renderApp(root: HTMLElement): void {
   exit.type = "button";
   exit.className = "pause-exit";
   exit.textContent = "Exit to Menu";
-  pauseCard.append(pauseTitle, resume, exit);
+  pauseCard.append(pauseKicker, pauseTitle, resume, exit);
   pauseDialog.append(pauseCard);
   pauseDialog.setAttribute("aria-labelledby", "pause-title");
 
@@ -414,6 +427,7 @@ export function renderApp(root: HTMLElement): void {
 
   const updateClock = (timeLeft: number, playing: boolean): void => {
     timerValue.textContent = formatTime(timeLeft);
+    timer.setAttribute("aria-label", `Time ${timerValue.textContent}`);
     timerFill.style.width = `${timerPercent(timeLeft, DIFFICULTY_SETTINGS[state.difficulty].startingTime)}%`;
     timer.classList.toggle("is-urgent", playing && isUrgent(timeLeft));
   };
@@ -431,7 +445,8 @@ export function renderApp(root: HTMLElement): void {
       "is-title-screen",
       !state.started && !showLeaderboard,
     );
-    status.textContent = state.started ? `Score ${state.score}` : "Score 0";
+    scoreValue.textContent = String(state.started ? state.score : 0);
+    status.setAttribute("aria-label", `Score ${scoreValue.textContent}`);
     continueButton.hidden = state.started || !hasContinue;
     start.hidden = state.started;
     helpButton.hidden = state.started;
