@@ -4,8 +4,9 @@ import {
   DIFFICULTY_SETTINGS,
   difficultyButtonText,
 } from "../data/difficulty";
-import { calculateCauldron } from "../logic/calculate-cauldron";
+import { reactionName } from "../data/reactions";
 import { isTopTenScore, isValidName } from "../logic/leaderboard";
+import { activeReactionNames, cauldronValues } from "../logic/reactions";
 import { formatTime, isUrgent, timerPercent } from "../logic/timer";
 import { clearSave, loadGame, saveGame } from "../storage/game-save";
 import {
@@ -16,10 +17,12 @@ import {
 import {
   addToCauldron,
   brewPotion,
+  canAddIngredient,
   continueGame,
   createInitialState,
   exitToMenu,
   pauseGame,
+  pourOut,
   resumeGame,
   selectDifficulty,
   startGame,
@@ -29,14 +32,22 @@ import {
 } from "../state/game-state";
 import { renderBars } from "./bars";
 import { renderCauldron } from "./cauldron";
+import { bindCauldronDrop, suppressNextClick } from "./drag";
 import { formatRange } from "./format";
 import { renderLeaderboard } from "./leaderboard";
+import { shortcutFromEvent, type PlayGate } from "./keyboard";
 import { renderShelf } from "./shelf";
 
 const GAME_OVER_TEXT: Record<GameOverReason, string> = {
   time: "Time is up.",
   lives: "No lives left.",
   ingredients: "Out of ingredients.",
+};
+
+const GAME_OVER_KICKER: Record<GameOverReason, string> = {
+  time: "The fire dies down",
+  lives: "The brew turns against you",
+  ingredients: "The shelf is bare",
 };
 
 function brewMessage(state: GameState): string {
@@ -60,7 +71,13 @@ export function renderApp(root: HTMLElement): void {
   let hasContinue = loadGame() !== null;
 
   const title = document.createElement("h1");
-  title.textContent = "Alchemist's Cauldron";
+  const titleKicker = document.createElement("span");
+  titleKicker.className = "title-line title-line--kicker";
+  titleKicker.textContent = "Alchemist's";
+  const titleMain = document.createElement("span");
+  titleMain.className = "title-line title-line--main";
+  titleMain.textContent = "Cauldron";
+  title.append(titleKicker, titleMain);
 
   const logo = document.createElement("img");
   logo.className = "logo";
@@ -69,14 +86,27 @@ export function renderApp(root: HTMLElement): void {
   logo.width = 64;
   logo.height = 64;
 
+  const masthead = document.createElement("header");
+  masthead.className = "masthead";
+  masthead.append(logo, title);
+
   const field = document.createElement("div");
   field.className = "game-field";
 
   const status = document.createElement("p");
   status.className = "status-line";
+  const scoreLabel = document.createElement("span");
+  scoreLabel.className = "stat-label";
+  scoreLabel.textContent = "Score";
+  const scoreValue = document.createElement("span");
+  scoreValue.className = "stat-value";
+  status.append(scoreLabel, scoreValue);
 
   const timer = document.createElement("div");
   timer.className = "timer";
+  const timerLabel = document.createElement("span");
+  timerLabel.className = "stat-label";
+  timerLabel.textContent = "Time";
   const timerValue = document.createElement("span");
   timerValue.className = "timer-value";
   const timerTrack = document.createElement("div");
@@ -84,7 +114,7 @@ export function renderApp(root: HTMLElement): void {
   const timerFill = document.createElement("div");
   timerFill.className = "timer-fill";
   timerTrack.append(timerFill);
-  timer.append(timerValue, timerTrack);
+  timer.append(timerLabel, timerValue, timerTrack);
 
   const lives = document.createElement("div");
   lives.className = "lives";
@@ -102,7 +132,14 @@ export function renderApp(root: HTMLElement): void {
   brew.type = "button";
   brew.className = "brew-button";
   brew.textContent = "Brew";
-  recipePanel.append(recipeTitle, ranges, counter, brew);
+  const pour = document.createElement("button");
+  pour.type = "button";
+  pour.className = "pour-button";
+  pour.textContent = "Pour Out";
+  const recipeActions = document.createElement("div");
+  recipeActions.className = "recipe-actions";
+  recipeActions.append(brew, pour);
+  recipePanel.append(recipeTitle, ranges, counter, recipeActions);
 
   const result = document.createElement("p");
   result.className = "brew-result";
@@ -140,39 +177,66 @@ export function renderApp(root: HTMLElement): void {
   const bars = document.createElement("div");
   bars.className = "bars";
   const shelfTitle = document.createElement("h2");
+  shelfTitle.className = "panel-title";
   shelfTitle.textContent = "Shelf";
   const shelf = document.createElement("div");
   shelf.className = "shelf";
   const cauldronTitle = document.createElement("h2");
+  cauldronTitle.className = "panel-title";
   cauldronTitle.textContent = "Cauldron";
   const cauldron = document.createElement("div");
   cauldron.className = "cauldron";
+  const cauldronBody = document.createElement("div");
+  cauldronBody.className = "cauldron-body";
+  const burst = document.createElement("div");
+  burst.className = "cauldron-burst";
+  burst.setAttribute("aria-hidden", "true");
+  for (let spark = 0; spark < 8; spark += 1) {
+    burst.append(document.createElement("span"));
+  }
+  cauldron.append(cauldronBody, burst);
 
-  field.append(
-    status,
-    timer,
-    lives,
+  const hud = document.createElement("div");
+  hud.className = "hud";
+  hud.append(status, timer, lives);
+
+  const menu = document.createElement("div");
+  menu.className = "menu-row";
+  menu.append(
     continueButton,
     start,
     helpButton,
     settingsButton,
     openBoard,
     pause,
-    recipePanel,
-    result,
-    bars,
-    shelfTitle,
-    shelf,
-    cauldronTitle,
-    cauldron,
   );
+
+  const shelfPanel = document.createElement("section");
+  shelfPanel.className = "panel";
+  shelfPanel.append(shelfTitle, shelf);
+
+  const bench = document.createElement("section");
+  bench.className = "panel bench";
+  const reactionNotice = document.createElement("p");
+  reactionNotice.className = "reaction-notice";
+  bench.append(bars, reactionNotice, cauldronTitle, cauldron);
+
+  const workspace = document.createElement("div");
+  workspace.className = "workspace";
+  workspace.append(shelfPanel, bench);
+
+  field.append(hud, menu, recipePanel, result, workspace);
 
   const pauseDialog = document.createElement("dialog");
   pauseDialog.className = "pause-dialog";
   const pauseCard = document.createElement("div");
   pauseCard.className = "pause-card";
+  const pauseKicker = document.createElement("p");
+  pauseKicker.className = "screen-kicker";
+  pauseKicker.textContent = "The mixture holds";
   const pauseTitle = document.createElement("h2");
   pauseTitle.id = "pause-title";
+  pauseTitle.className = "pause-heading";
   pauseTitle.textContent = "Game Paused";
   const resume = document.createElement("button");
   resume.type = "button";
@@ -182,12 +246,20 @@ export function renderApp(root: HTMLElement): void {
   exit.type = "button";
   exit.className = "pause-exit";
   exit.textContent = "Exit to Menu";
-  pauseCard.append(pauseTitle, resume, exit);
+  pauseCard.append(pauseKicker, pauseTitle, resume, exit);
   pauseDialog.append(pauseCard);
   pauseDialog.setAttribute("aria-labelledby", "pause-title");
 
   const gameOver = document.createElement("section");
   gameOver.className = "game-over";
+  const embers = document.createElement("div");
+  embers.className = "game-over-embers";
+  embers.setAttribute("aria-hidden", "true");
+  for (let ember = 0; ember < 10; ember += 1) {
+    embers.append(document.createElement("span"));
+  }
+  const gameOverKicker = document.createElement("p");
+  gameOverKicker.className = "game-over-kicker";
   const gameOverTitle = document.createElement("h2");
   gameOverTitle.textContent = "Game Over";
   const gameOverReason = document.createElement("p");
@@ -223,12 +295,16 @@ export function renderApp(root: HTMLElement): void {
   openBoardFromOver.className = "pause-button";
   openBoardFromOver.textContent = "Leaderboard";
   gameOverActions.append(playAgain, openBoardFromOver);
+  const gameOverPlate = document.createElement("div");
+  gameOverPlate.className = "game-over-plate";
+  gameOverPlate.append(nameForm, gameOverActions);
   gameOver.append(
+    embers,
+    gameOverKicker,
     gameOverTitle,
     gameOverReason,
     gameOverScore,
-    nameForm,
-    gameOverActions,
+    gameOverPlate,
   );
 
   const board = document.createElement("section");
@@ -297,9 +373,10 @@ export function renderApp(root: HTMLElement): void {
   helpClose.className = "start-button";
   helpClose.textContent = "Close";
   for (const text of [
-    "Add ingredients from the shelf until Temperature, Density and Magic Power fit the recipe. Brew allows a tolerance around each range.",
-    "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life.",
+    "Click an ingredient or drag it into the cauldron until Temperature, Density and Magic Power fit the recipe. Hover a card to see those three numbers. Brew allows a tolerance around each range.",
+    "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life. Pour Out empties the cauldron for 10 seconds, keeps the life, and does not return the ingredients. On Medium and Hard, some mixes start a reaction that changes the bars, the clock, or the cauldron. The same mix does not trigger twice until it breaks.",
     "The run ends when time runs out, lives reach 0, or the shelf and the cauldron are both empty. Pause stops the clock. An unfinished game can be continued after the page is reloaded.",
+    "During a run, P pauses, B brews, O pours out, and 1–8 adds the ingredient in that shelf slot. These keys do nothing on the start screen, the pause screen, or the game over screen. Resume with the Resume button.",
   ]) {
     const paragraph = document.createElement("p");
     paragraph.className = "rules-text";
@@ -338,8 +415,7 @@ export function renderApp(root: HTMLElement): void {
   settingsDialog.setAttribute("aria-labelledby", "settings-title");
 
   root.replaceChildren(
-    logo,
-    title,
+    masthead,
     field,
     pauseDialog,
     gameOver,
@@ -351,6 +427,7 @@ export function renderApp(root: HTMLElement): void {
 
   const updateClock = (timeLeft: number, playing: boolean): void => {
     timerValue.textContent = formatTime(timeLeft);
+    timer.setAttribute("aria-label", `Time ${timerValue.textContent}`);
     timerFill.style.width = `${timerPercent(timeLeft, DIFFICULTY_SETTINGS[state.difficulty].startingTime)}%`;
     timer.classList.toggle("is-urgent", playing && isUrgent(timeLeft));
   };
@@ -364,7 +441,12 @@ export function renderApp(root: HTMLElement): void {
     field.inert = state.paused;
     gameOver.hidden = !over || showLeaderboard;
     board.hidden = !showLeaderboard;
-    status.textContent = state.started ? `Score ${state.score}` : "Score 0";
+    masthead.classList.toggle(
+      "is-title-screen",
+      !state.started && !showLeaderboard,
+    );
+    scoreValue.textContent = String(state.started ? state.score : 0);
+    status.setAttribute("aria-label", `Score ${scoreValue.textContent}`);
     continueButton.hidden = state.started || !hasContinue;
     start.hidden = state.started;
     helpButton.hidden = state.started;
@@ -396,10 +478,12 @@ export function renderApp(root: HTMLElement): void {
     counter.textContent = `Ingredients: ${count} / ${state.maxInCauldron}`;
     counter.classList.toggle("is-full", count >= state.maxInCauldron);
     brew.disabled = !playing || count === 0;
+    pour.disabled = !playing || count === 0;
     result.textContent = brewMessage(state);
     updateClock(state.timeLeft, playing);
 
     if (state.gameOverReason) {
+      gameOverKicker.textContent = GAME_OVER_KICKER[state.gameOverReason];
       gameOverReason.textContent = GAME_OVER_TEXT[state.gameOverReason];
       gameOverScore.textContent = `Final score: ${state.score}`;
       nameForm.hidden =
@@ -419,16 +503,36 @@ export function renderApp(root: HTMLElement): void {
       boardMessage.hidden = boardMessage.textContent === "";
     }
 
-    renderBars(bars, calculateCauldron(state.cauldronIngredients), recipe);
+    renderBars(
+      bars,
+      cauldronValues(state.cauldronIngredients, state.difficulty),
+      recipe,
+    );
+    const activeNames = activeReactionNames(
+      state.cauldronIngredients,
+      state.difficulty,
+    );
+    const firedName = state.lastReactionId
+      ? reactionName(state.lastReactionId)
+      : null;
+    const reactionLabel =
+      activeNames.length > 0 ? activeNames.join(", ") : firedName;
+    reactionNotice.textContent = reactionLabel
+      ? `Reaction: ${reactionLabel}`
+      : "";
     renderShelf(shelf, state, (id) => {
       state = addToCauldron(state, id);
       remember();
       paint();
     });
-    renderCauldron(cauldron, state.cauldronIngredients);
+    renderCauldron(cauldronBody, state.cauldronIngredients);
+    if (!canAddIngredient(state)) {
+      cauldron.classList.remove("is-drop-target");
+    }
 
     if (state.paused && !pauseDialog.open) {
       pauseDialog.showModal();
+      resume.focus();
     }
     if (!state.paused && pauseDialog.open) {
       pauseDialog.close();
@@ -454,6 +558,22 @@ export function renderApp(root: HTMLElement): void {
     paint();
   };
 
+  bindCauldronDrop(
+    cauldron,
+    () => canAddIngredient(state),
+    (id) => {
+      const next = addToCauldron(state, id);
+      if (next === state) {
+        return;
+      }
+
+      suppressNextClick();
+      state = next;
+      remember();
+      paint();
+    },
+  );
+
   start.addEventListener("click", beginRun);
   playAgain.addEventListener("click", beginRun);
 
@@ -474,14 +594,118 @@ export function renderApp(root: HTMLElement): void {
     paint();
   });
 
-  brew.addEventListener("click", () => {
+  const replayAnimation = (element: HTMLElement, className: string): void => {
+    element.classList.remove(
+      "is-brew-success",
+      "is-brew-failure",
+      "is-shaking",
+    );
+    void element.offsetWidth;
+    element.classList.add(className);
+  };
+
+  cauldron.addEventListener("animationend", (event) => {
+    if (event.target !== cauldron) {
+      return;
+    }
+
+    cauldron.classList.remove("is-brew-success", "is-brew-failure");
+  });
+
+  field.addEventListener("animationend", (event) => {
+    if (event.target !== field) {
+      return;
+    }
+
+    field.classList.remove("is-shaking");
+  });
+
+  const runBrew = (): void => {
+    const before = state;
     state = brewPotion(state);
     remember();
     paint();
-  });
 
-  pause.addEventListener("click", () => {
+    const brewed =
+      before.cauldronIngredients.length > 0 &&
+      state.cauldronIngredients.length === 0 &&
+      state.lastBrew !== null;
+
+    if (!brewed) {
+      return;
+    }
+
+    if (state.lastBrew === "success") {
+      field.classList.remove("is-shaking");
+      replayAnimation(cauldron, "is-brew-success");
+      return;
+    }
+
+    replayAnimation(cauldron, "is-brew-failure");
+    replayAnimation(field, "is-shaking");
+  };
+
+  const runPour = (): void => {
+    state = pourOut(state);
+    remember();
+    paint();
+  };
+
+  const runPause = (): void => {
     state = pauseGame(state);
+    remember();
+    paint();
+  };
+
+  brew.addEventListener("click", runBrew);
+  pour.addEventListener("click", runPour);
+  pause.addEventListener("click", runPause);
+
+  const playGate = (): PlayGate => {
+    if (!state.started || showLeaderboard) {
+      return "menu";
+    }
+
+    if (state.gameOverReason) {
+      return "game-over";
+    }
+
+    if (state.paused) {
+      return "paused";
+    }
+
+    return "playing";
+  };
+
+  document.addEventListener("keydown", (event) => {
+    const shortcut = shortcutFromEvent(event, playGate());
+    if (!shortcut) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (shortcut.kind === "pause") {
+      runPause();
+      return;
+    }
+
+    if (shortcut.kind === "brew") {
+      runBrew();
+      return;
+    }
+
+    if (shortcut.kind === "pour") {
+      runPour();
+      return;
+    }
+
+    const ingredient = state.shelf[shortcut.index];
+    if (!ingredient) {
+      return;
+    }
+
+    state = addToCauldron(state, ingredient.id);
     remember();
     paint();
   });

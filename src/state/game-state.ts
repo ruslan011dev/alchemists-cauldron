@@ -1,10 +1,11 @@
 import { DIFFICULTY_SETTINGS } from "../data/difficulty";
 import { INGREDIENTS, type IIngredient } from "../data/ingredients";
 import type { Difficulty, IRecipe } from "../data/recipes";
+import { reactionsFor, type IReaction } from "../data/reactions";
 import { addIngredient } from "../logic/add-ingredient";
 import type { SavedGame } from "../logic/game-save";
 import { isBrewSuccess } from "../logic/brew-check";
-import { calculateCauldron } from "../logic/calculate-cauldron";
+import { cauldronValues, firedReactions } from "../logic/reactions";
 import { pickRecipe } from "../logic/recipe-generator";
 import { createStock, isOutOfIngredients } from "../logic/stock";
 import { remainingSeconds } from "../logic/timer";
@@ -27,6 +28,7 @@ export interface GameState {
   endAt: number | null;
   gameOverReason: GameOverReason | null;
   paused: boolean;
+  lastReactionId: string | null;
 }
 
 export function createInitialState(
@@ -55,6 +57,7 @@ export function createInitialState(
     endAt: null,
     gameOverReason: null,
     paused: false,
+    lastReactionId: null,
   };
 }
 
@@ -89,6 +92,7 @@ export function startGame(state: GameState, now = Date.now()): GameState {
     endAt: now + timeLeft * 1000,
     gameOverReason: null,
     paused: false,
+    lastReactionId: null,
   };
 }
 
@@ -149,6 +153,7 @@ export function continueGame(save: SavedGame): GameState {
     endAt: null,
     gameOverReason: null,
     paused: true,
+    lastReactionId: null,
   };
 }
 
@@ -199,22 +204,84 @@ export function syncTime(state: GameState, now: number): GameState {
   return { ...state, timeLeft };
 }
 
-export function addToCauldron(state: GameState, id: string): GameState {
-  if (
-    !state.started ||
-    state.paused ||
-    state.gameOverReason ||
-    state.lives <= 0
-  ) {
-    return state;
+export function canAddIngredient(state: GameState): boolean {
+  return (
+    state.started &&
+    !state.paused &&
+    state.gameOverReason === null &&
+    state.lives > 0 &&
+    state.cauldronIngredients.length < state.maxInCauldron
+  );
+}
+
+export function addToCauldron(
+  state: GameState,
+  id: string,
+  now = Date.now(),
+): GameState {
+  const current = syncTime(state, now);
+  if (!canAddIngredient(current)) {
+    return current;
   }
 
-  const next = addIngredient(state, state.shelf, id);
-  return {
-    ...state,
+  const next = addIngredient(current, current.shelf, id);
+  if (next === current) {
+    return current;
+  }
+
+  const reactions = reactionsFor(current.difficulty);
+  const fired = firedReactions(
+    current.cauldronIngredients,
+    next.cauldronIngredients,
+    reactions,
+  );
+  let updated: GameState = {
+    ...current,
     cauldronIngredients: next.cauldronIngredients,
     shelfStock: next.shelfStock,
+    lastReactionId: fired[0]?.id ?? null,
   };
+
+  for (const reaction of fired) {
+    updated = applyReactionFire(updated, reaction, now);
+    if (updated.gameOverReason) {
+      return updated;
+    }
+  }
+
+  return settle(updated);
+}
+
+function applyReactionFire(
+  state: GameState,
+  reaction: IReaction,
+  now: number,
+): GameState {
+  let next = state;
+  if (reaction.effect.clearCauldron) {
+    next = { ...next, cauldronIngredients: [] };
+  }
+
+  if (reaction.effect.loseLife) {
+    next = { ...next, lives: next.lives - 1 };
+    if (next.lives <= 0) {
+      return settle(next);
+    }
+  }
+
+  if (reaction.effect.timePenalty > 0) {
+    const timeLeft = Math.max(0, next.timeLeft - reaction.effect.timePenalty);
+    next = {
+      ...next,
+      timeLeft,
+      endAt: timeLeft === 0 ? null : now + timeLeft * 1000,
+    };
+    if (timeLeft === 0) {
+      return finishGame(next, "time");
+    }
+  }
+
+  return next;
 }
 
 export function brewPotion(state: GameState, now = Date.now()): GameState {
@@ -234,7 +301,10 @@ export function brewPotion(state: GameState, now = Date.now()): GameState {
     return current;
   }
 
-  const values = calculateCauldron(current.cauldronIngredients);
+  const values = cauldronValues(
+    current.cauldronIngredients,
+    current.difficulty,
+  );
   const settings = DIFFICULTY_SETTINGS[current.difficulty];
   const success = isBrewSuccess(
     values,
@@ -256,6 +326,7 @@ export function brewPotion(state: GameState, now = Date.now()): GameState {
       cauldronIngredients: [],
       activeRecipe: pickRecipe(settings.difficulty),
       lastBrew: "success",
+      lastReactionId: null,
     });
   }
 
@@ -264,5 +335,38 @@ export function brewPotion(state: GameState, now = Date.now()): GameState {
     lives: current.lives - 1,
     cauldronIngredients: [],
     lastBrew: "failure",
+    lastReactionId: null,
   });
+}
+
+const POUR_OUT_COST = 10;
+
+export function pourOut(state: GameState, now = Date.now()): GameState {
+  if (state.paused) {
+    return state;
+  }
+
+  const current = syncTime(state, now);
+  if (
+    !current.started ||
+    current.gameOverReason ||
+    current.cauldronIngredients.length === 0
+  ) {
+    return current;
+  }
+
+  const timeLeft = Math.max(0, current.timeLeft - POUR_OUT_COST);
+  const next: GameState = {
+    ...current,
+    timeLeft,
+    endAt: timeLeft === 0 ? null : now + timeLeft * 1000,
+    cauldronIngredients: [],
+    lastReactionId: null,
+  };
+
+  if (timeLeft === 0) {
+    return finishGame(next, "time");
+  }
+
+  return settle(next);
 }

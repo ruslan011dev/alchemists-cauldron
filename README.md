@@ -2,18 +2,17 @@
 
 A browser game about brewing potions. The player adds ingredients from a shelf into a cauldron and watches three values: **Temperature**, **Density**, and **Magic Power**. The goal of a round is to bring all three into the target ranges of the current recipe, then brew before the timer or the lives run out.
 
+Play the game: https://ruslan011dev.github.io/alchemists-cauldron/
+
 Each ingredient has a limited stock. A brew spends the ingredients in the cauldron whether it succeeds or fails. The run ends when the time is over, the lives are gone, or the shelf and the cauldron are both empty.
 
-## Task set
+## What is implemented
 
-The work is split into a technical base and three game levels. Later levels keep everything from the earlier ones.
+Levels 1, 2 and 3 are implemented.
 
-| Stage               | What it adds                                                                          |
-| ------------------- | ------------------------------------------------------------------------------------- |
-| Precondition 1      | Repository, tooling, folder structure, and quality checks                             |
-| Level 1 — Basic     | One playable game with one fixed rule set                                             |
-| Level 2 — Extended  | Difficulty selection, saving, and continue                                            |
-| Level 3 — Full game | Drag and drop, tooltips, reactions, Pour Out, keyboard shortcuts, and visual feedback |
+- **Level 1.** Shelf and cauldron, three parameter bars, random recipes, Brew, timer, lives, pause, game over, and a Top-10 leaderboard.
+- **Level 2.** Easy, Medium and Hard in Settings. An unfinished game is saved in the browser and can be continued.
+- **Level 3.** Drag and drop, hover tooltips, chemical reactions, Pour Out, brew animations, and keyboard shortcuts.
 
 ## Project structure
 
@@ -32,29 +31,19 @@ src/
 
 ## Technical base
 
-- TypeScript only. No frameworks, CSS frameworks, game engines, or other libraries.
-- Game rules stay separate from the screen.
-- The game is meant for the latest Google Chrome, on screens from 375 px to 1920 px wide.
-
-## Current game
-
-The shelf and cauldron from Level 1 are playable. Press **Start Game**. A medium recipe is chosen, and six ingredient cards appear, each with its own stock from 2 to 15. Click a card to add that ingredient to the cauldron. The cauldron keeps the click order and holds at most 4 ingredients. At 4, the shelf stops accepting clicks. A card with stock 0 stays in place, turns dim, and cannot be used.
-
-Three bars show Temperature, Density and Magic Power. An empty cauldron is 0 / 0 / 0. Each added ingredient changes the sums. The pale band on a bar is the recipe target, the light line is 0, and the marker is the current value. The bar glows green when the value sits inside the target.
-
-The recipe panel shows the recipe name, the three target ranges, and **Ingredients: added / 4**. At 4 / 4 the counter is highlighted and the shelf blocks. **Brew** stays disabled until the cauldron has at least one ingredient. A successful brew, within ±8 of the target, scores 200, adds 10 seconds without going above 150, clears the cauldron and picks a new medium recipe. A failed brew removes one life and clears the cauldron. Spent ingredients do not return. The run starts with 3 lives and 150 seconds.
-
-The remaining time is shown as MM:SS and as a shrinking bar. It is calculated from the clock, so leaving the tab does not make it drift. Under 15 seconds the timer turns red and pulses. The game ends at 00:00, when the last life is lost, or when the shelf and the cauldron are both empty. The Game Over screen shows the reason, the final score and **Play again**.
-
-The full catalogue has 8 ingredients. This level uses the first 6.
+- TypeScript only.
 
 ## Run
+
+Play the game: https://ruslan011dev.github.io/alchemists-cauldron/
 
 ```bash
 npm install
 npm run dev
 ```
 
-`npm run build` checks the types and writes the production build to `dist/`. `npm run preview` serves that build.
+`npm run dev` opens the game at `http://localhost:5173/`.
+
+`npm run build` checks the types and writes the production build to `dist/`. `npm run preview` serves that build at `http://localhost:4173/alchemists-cauldron/`.
 
 `npm run lint` checks the code. `npm run format` formats it. A commit message must follow the [RS School git convention](https://rs.school/docs/git-convention). Before a push, lint and formatting must pass.
