@@ -19,6 +19,9 @@ export function renderLeaderboard(
 
   for (const [index, entry] of entries.entries()) {
     const row = document.createElement("tr");
+    if (index === 0) {
+      row.classList.add("is-first");
+    }
     const values = [
       String(index + 1),
       entry.name,
