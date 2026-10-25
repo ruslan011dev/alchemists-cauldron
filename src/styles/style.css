@@ -67,10 +67,23 @@ button:focus-visible,
   padding-bottom: 4px;
 }
 
+.masthead.is-title-screen {
+  flex-direction: column;
+  gap: 2px;
+  padding-top: 8px;
+  padding-bottom: 10px;
+}
+
 .logo {
   width: 72px;
   height: 72px;
   filter: drop-shadow(0 8px 12px rgb(0 0 0 / 45%));
+}
+
+.masthead.is-title-screen .logo {
+  width: 104px;
+  height: 104px;
+  filter: drop-shadow(0 0 18px rgb(212 83 44 / 55%));
 }
 
 h1,
@@ -79,10 +92,44 @@ h2 {
 }
 
 h1 {
-  font-size: clamp(1.7rem, 4vw, 2.5rem);
   font-weight: 600;
-  letter-spacing: 0.02em;
-  text-align: left;
+  text-align: center;
+}
+
+.title-line {
+  display: block;
+}
+
+.title-line--kicker {
+  color: var(--gold);
+  font-size: 0.72rem;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em;
+  text-transform: uppercase;
+}
+
+.title-line--main {
+  font-size: clamp(1.7rem, 4vw, 2.4rem);
+  line-height: 0.95;
+  letter-spacing: 0.08em;
+  text-indent: 0.08em;
+  text-transform: uppercase;
+  color: #fff6ec;
+  text-shadow: 0 0 16px rgb(212 83 44 / 45%);
+}
+
+.masthead.is-title-screen .title-line--kicker {
+  font-size: clamp(0.85rem, 2.4vw, 1.05rem);
+}
+
+.masthead.is-title-screen .title-line--main {
+  font-size: clamp(3rem, 12vw, 5.6rem);
+  letter-spacing: 0.12em;
+  text-indent: 0.12em;
+  text-shadow:
+    0 0 14px rgb(255 196 140 / 75%),
+    0 0 46px rgb(212 83 44 / 80%);
+  animation: game-over-glow 2.8s ease-in-out infinite;
 }
 
 .game-field,
@@ -784,6 +831,152 @@ h1 {
   padding: 28px 18px 22px;
 }
 
+.game-over {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  justify-content: center;
+  gap: 12px;
+  min-height: min(680px, calc(100vh - 120px));
+  padding: 64px 22px 36px;
+  border-color: #9a5340;
+  background:
+    radial-gradient(ellipse at 50% 120%, rgb(212 83 44 / 48%), transparent 48%),
+    radial-gradient(ellipse at 50% 0%, rgb(228 193 106 / 14%), transparent 42%),
+    #140e0b;
+  box-shadow:
+    inset 0 0 90px rgb(0 0 0 / 55%),
+    0 24px 60px rgb(0 0 0 / 45%);
+  animation: game-over-enter 0.6s ease-out;
+}
+
+.game-over h2 {
+  z-index: 1;
+  font-size: clamp(2.7rem, 9vw, 5.4rem);
+  font-weight: 600;
+  line-height: 0.9;
+  letter-spacing: 0.12em;
+  text-indent: 0.12em;
+  text-transform: uppercase;
+  color: #fff6ec;
+  text-shadow:
+    0 0 14px rgb(255 196 140 / 75%),
+    0 0 46px rgb(212 83 44 / 80%);
+  animation: game-over-glow 2.8s ease-in-out infinite;
+}
+
+.game-over-kicker,
+.game-over-reason,
+.game-over-score,
+.game-over-plate {
+  position: relative;
+  z-index: 1;
+}
+
+.game-over-kicker {
+  max-width: 16rem;
+  margin: 0;
+  color: var(--gold);
+  font-size: 0.78rem;
+  line-height: 1.7;
+  letter-spacing: 0.18em;
+  text-indent: 0.18em;
+  text-transform: uppercase;
+  text-wrap: balance;
+}
+
+.game-over-reason {
+  font-size: 1.25rem;
+}
+
+.game-over-score {
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  color: var(--gold);
+  text-shadow: 0 0 18px rgb(228 193 106 / 35%);
+}
+
+.game-over-plate {
+  width: min(420px, 100%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-top: 10px;
+}
+
+.game-over-embers {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.game-over-embers span {
+  position: absolute;
+  bottom: 6%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffb15a;
+  box-shadow: 0 0 10px rgb(255 160 70 / 80%);
+  animation: ember-rise 5.4s linear infinite;
+}
+
+.game-over-embers span:nth-child(1) {
+  left: 12%;
+}
+
+.game-over-embers span:nth-child(2) {
+  left: 24%;
+  animation-delay: 1.1s;
+  animation-duration: 4.6s;
+}
+
+.game-over-embers span:nth-child(3) {
+  left: 36%;
+  animation-delay: 2.2s;
+}
+
+.game-over-embers span:nth-child(4) {
+  left: 48%;
+  animation-delay: 0.4s;
+  animation-duration: 6s;
+}
+
+.game-over-embers span:nth-child(5) {
+  left: 58%;
+  animation-delay: 1.8s;
+}
+
+.game-over-embers span:nth-child(6) {
+  left: 70%;
+  animation-delay: 2.8s;
+  animation-duration: 4.2s;
+}
+
+.game-over-embers span:nth-child(7) {
+  left: 80%;
+  animation-delay: 0.8s;
+}
+
+.game-over-embers span:nth-child(8) {
+  left: 18%;
+  animation-delay: 3.2s;
+  animation-duration: 6.4s;
+}
+
+.game-over-embers span:nth-child(9) {
+  left: 64%;
+  animation-delay: 3.6s;
+}
+
+.game-over-embers span:nth-child(10) {
+  left: 88%;
+  animation-delay: 1.5s;
+  animation-duration: 5s;
+}
+
 .name-form {
   width: min(360px, 100%);
   display: flex;
@@ -854,6 +1047,49 @@ h1 {
 @keyframes timer-pulse {
   50% {
     opacity: 0.45;
+  }
+}
+
+@keyframes game-over-enter {
+  from {
+    opacity: 0;
+    transform: translateY(22px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes game-over-glow {
+  0%,
+  100% {
+    text-shadow:
+      0 0 14px rgb(255 196 140 / 75%),
+      0 0 46px rgb(212 83 44 / 80%);
+  }
+
+  50% {
+    text-shadow:
+      0 0 22px rgb(255 220 170 / 95%),
+      0 0 64px rgb(212 83 44 / 95%);
+  }
+}
+
+@keyframes ember-rise {
+  0% {
+    opacity: 0;
+    transform: translateY(0) scale(1);
+  }
+
+  18% {
+    opacity: 0.9;
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-340px) scale(0.35);
   }
 }
 
@@ -955,7 +1191,11 @@ h1 {
   .cauldron.is-brew-failure,
   .cauldron.is-brew-failure .cauldron-burst,
   .cauldron.is-brew-failure .cauldron-burst span,
-  .game-field.is-shaking {
+  .game-field.is-shaking,
+  .game-over,
+  .game-over h2,
+  .game-over-embers span,
+  .masthead.is-title-screen .title-line--main {
     animation: none;
   }
 
