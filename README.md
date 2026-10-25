@@ -50,6 +50,8 @@ The full catalogue has 8 ingredients. This level uses the first 6.
 
 ## Run
 
+Play the game: https://ruslan011dev.github.io/alchemists-cauldron/
+
 ```bash
 npm install
 npm run dev
