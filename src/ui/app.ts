@@ -548,7 +548,11 @@ export function renderApp(root: HTMLElement): void {
   });
 
   const replayAnimation = (element: HTMLElement, className: string): void => {
-    element.classList.remove("is-brew-success", "is-brew-failure", "is-shaking");
+    element.classList.remove(
+      "is-brew-success",
+      "is-brew-failure",
+      "is-shaking",
+    );
     void element.offsetWidth;
     element.classList.add(className);
   };
