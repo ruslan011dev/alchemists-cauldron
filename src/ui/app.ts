@@ -35,6 +35,7 @@ import { renderCauldron } from "./cauldron";
 import { bindCauldronDrop, suppressNextClick } from "./drag";
 import { formatRange } from "./format";
 import { renderLeaderboard } from "./leaderboard";
+import { shortcutFromEvent, type PlayGate } from "./keyboard";
 import { renderShelf } from "./shelf";
 
 const GAME_OVER_TEXT: Record<GameOverReason, string> = {
@@ -338,6 +339,7 @@ export function renderApp(root: HTMLElement): void {
     "Click an ingredient or drag it into the cauldron until Temperature, Density and Magic Power fit the recipe. Hover a card to see those three numbers. Brew allows a tolerance around each range.",
     "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life. Pour Out empties the cauldron for 10 seconds, keeps the life, and does not return the ingredients. On Medium and Hard, some mixes start a reaction that changes the bars, the clock, or the cauldron. The same mix does not trigger twice until it breaks.",
     "The run ends when time runs out, lives reach 0, or the shelf and the cauldron are both empty. Pause stops the clock. An unfinished game can be continued after the page is reloaded.",
+    "During a run, P pauses, B brews, O pours out, and 1–8 adds the ingredient in that shelf slot. These keys do nothing on the start screen, the pause screen, or the game over screen. Resume with the Resume button.",
   ]) {
     const paragraph = document.createElement("p");
     paragraph.className = "rules-text";
@@ -486,6 +488,7 @@ export function renderApp(root: HTMLElement): void {
 
     if (state.paused && !pauseDialog.open) {
       pauseDialog.showModal();
+      resume.focus();
     }
     if (!state.paused && pauseDialog.open) {
       pauseDialog.close();
@@ -573,7 +576,7 @@ export function renderApp(root: HTMLElement): void {
     field.classList.remove("is-shaking");
   });
 
-  brew.addEventListener("click", () => {
+  const runBrew = (): void => {
     const before = state;
     state = brewPotion(state);
     remember();
@@ -596,16 +599,69 @@ export function renderApp(root: HTMLElement): void {
 
     replayAnimation(cauldron, "is-brew-failure");
     replayAnimation(field, "is-shaking");
-  });
+  };
 
-  pour.addEventListener("click", () => {
+  const runPour = (): void => {
     state = pourOut(state);
     remember();
     paint();
-  });
+  };
 
-  pause.addEventListener("click", () => {
+  const runPause = (): void => {
     state = pauseGame(state);
+    remember();
+    paint();
+  };
+
+  brew.addEventListener("click", runBrew);
+  pour.addEventListener("click", runPour);
+  pause.addEventListener("click", runPause);
+
+  const playGate = (): PlayGate => {
+    if (!state.started || showLeaderboard) {
+      return "menu";
+    }
+
+    if (state.gameOverReason) {
+      return "game-over";
+    }
+
+    if (state.paused) {
+      return "paused";
+    }
+
+    return "playing";
+  };
+
+  document.addEventListener("keydown", (event) => {
+    const shortcut = shortcutFromEvent(event, playGate());
+    if (!shortcut) {
+      return;
+    }
+
+    event.preventDefault();
+
+    if (shortcut.kind === "pause") {
+      runPause();
+      return;
+    }
+
+    if (shortcut.kind === "brew") {
+      runBrew();
+      return;
+    }
+
+    if (shortcut.kind === "pour") {
+      runPour();
+      return;
+    }
+
+    const ingredient = state.shelf[shortcut.index];
+    if (!ingredient) {
+      return;
+    }
+
+    state = addToCauldron(state, ingredient.id);
     remember();
     paint();
   });
