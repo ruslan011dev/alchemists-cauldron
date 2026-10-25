@@ -44,6 +44,12 @@ const GAME_OVER_TEXT: Record<GameOverReason, string> = {
   ingredients: "Out of ingredients.",
 };
 
+const GAME_OVER_KICKER: Record<GameOverReason, string> = {
+  time: "The fire dies down",
+  lives: "The brew turns against you",
+  ingredients: "The shelf is bare",
+};
+
 function brewMessage(state: GameState): string {
   if (state.lastBrew === "success") {
     return "The brew succeeded.";
@@ -65,7 +71,13 @@ export function renderApp(root: HTMLElement): void {
   let hasContinue = loadGame() !== null;
 
   const title = document.createElement("h1");
-  title.textContent = "Alchemist's Cauldron";
+  const titleKicker = document.createElement("span");
+  titleKicker.className = "title-line title-line--kicker";
+  titleKicker.textContent = "Alchemist's";
+  const titleMain = document.createElement("span");
+  titleMain.className = "title-line title-line--main";
+  titleMain.textContent = "Cauldron";
+  title.append(titleKicker, titleMain);
 
   const logo = document.createElement("img");
   logo.className = "logo";
@@ -227,6 +239,14 @@ export function renderApp(root: HTMLElement): void {
 
   const gameOver = document.createElement("section");
   gameOver.className = "game-over";
+  const embers = document.createElement("div");
+  embers.className = "game-over-embers";
+  embers.setAttribute("aria-hidden", "true");
+  for (let ember = 0; ember < 10; ember += 1) {
+    embers.append(document.createElement("span"));
+  }
+  const gameOverKicker = document.createElement("p");
+  gameOverKicker.className = "game-over-kicker";
   const gameOverTitle = document.createElement("h2");
   gameOverTitle.textContent = "Game Over";
   const gameOverReason = document.createElement("p");
@@ -262,12 +282,16 @@ export function renderApp(root: HTMLElement): void {
   openBoardFromOver.className = "pause-button";
   openBoardFromOver.textContent = "Leaderboard";
   gameOverActions.append(playAgain, openBoardFromOver);
+  const gameOverPlate = document.createElement("div");
+  gameOverPlate.className = "game-over-plate";
+  gameOverPlate.append(nameForm, gameOverActions);
   gameOver.append(
+    embers,
+    gameOverKicker,
     gameOverTitle,
     gameOverReason,
     gameOverScore,
-    nameForm,
-    gameOverActions,
+    gameOverPlate,
   );
 
   const board = document.createElement("section");
@@ -403,6 +427,10 @@ export function renderApp(root: HTMLElement): void {
     field.inert = state.paused;
     gameOver.hidden = !over || showLeaderboard;
     board.hidden = !showLeaderboard;
+    masthead.classList.toggle(
+      "is-title-screen",
+      !state.started && !showLeaderboard,
+    );
     status.textContent = state.started ? `Score ${state.score}` : "Score 0";
     continueButton.hidden = state.started || !hasContinue;
     start.hidden = state.started;
@@ -440,6 +468,7 @@ export function renderApp(root: HTMLElement): void {
     updateClock(state.timeLeft, playing);
 
     if (state.gameOverReason) {
+      gameOverKicker.textContent = GAME_OVER_KICKER[state.gameOverReason];
       gameOverReason.textContent = GAME_OVER_TEXT[state.gameOverReason];
       gameOverScore.textContent = `Final score: ${state.score}`;
       nameForm.hidden =
