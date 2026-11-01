@@ -1,19 +1,34 @@
 import { ACHIEVEMENTS } from "../data/achievements";
+import { CODEX_ENTRIES } from "../data/codex";
 import { difficultyName } from "../data/difficulty";
 import { formatEntryDate } from "../logic/leaderboard";
-import type {
-  PlayerProgress,
-  RunEndReason,
-  RunRecord,
-  UnlockId,
+import {
+  hasUnlock,
+  type PlayerProgress,
+  type RunEndReason,
+  type RunRecord,
+  type UnlockId,
 } from "../logic/progress";
+import { canUseTheme, type ThemeId } from "../logic/theme";
+import { applySavedTheme, chooseTheme } from "./theme";
 
-type ProgressTab = "stats" | "history" | "achievements";
+type ProgressTab = "stats" | "history" | "achievements" | "codex";
 
 const TABS: readonly { id: ProgressTab; label: string }[] = [
   { id: "stats", label: "Stats" },
   { id: "history", label: "History" },
   { id: "achievements", label: "Achievements" },
+  { id: "codex", label: "Codex" },
+];
+
+const THEME_CHOICES: readonly {
+  id: ThemeId;
+  label: string;
+  unlock?: UnlockId;
+}[] = [
+  { id: "classic", label: "Classic" },
+  { id: "night-lab", label: "Night Lab", unlock: "theme-night-lab" },
+  { id: "parchment", label: "Parchment", unlock: "theme-parchment" },
 ];
 
 const END_REASON: Record<RunEndReason, string> = {
@@ -47,6 +62,31 @@ export function createProgressView(): ProgressView {
   title.textContent = "Progress";
   root.setAttribute("aria-labelledby", "progress-title");
 
+  const themeRow = document.createElement("div");
+  themeRow.className = "theme-row";
+  const themeLabel = document.createElement("p");
+  themeLabel.className = "theme-label";
+  themeLabel.textContent = "Theme";
+  themeRow.append(themeLabel);
+  const themeButtons = new Map<ThemeId, HTMLButtonElement>();
+
+  for (const choice of THEME_CHOICES) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "pause-button theme-button";
+    button.textContent = choice.label;
+    button.addEventListener("click", () => {
+      if (!progress || !canUseTheme(choice.id, progress.unlocks)) {
+        return;
+      }
+
+      chooseTheme(choice.id, progress.unlocks);
+      paint();
+    });
+    themeButtons.set(choice.id, button);
+    themeRow.append(button);
+  }
+
   const tabs = document.createElement("div");
   tabs.className = "progress-tabs";
   tabs.setAttribute("role", "tablist");
@@ -77,7 +117,7 @@ export function createProgressView(): ProgressView {
   back.textContent = "Back";
   actions.append(back);
 
-  root.append(title, tabs, body, actions);
+  root.append(title, themeRow, tabs, body, actions);
 
   const paint = (): void => {
     for (const [id, button] of tabButtons) {
@@ -91,6 +131,13 @@ export function createProgressView(): ProgressView {
       return;
     }
 
+    const activeTheme = applySavedTheme(progress.unlocks);
+    for (const [id, button] of themeButtons) {
+      const open = canUseTheme(id, progress.unlocks);
+      button.disabled = !open;
+      button.classList.toggle("is-selected", open && id === activeTheme);
+    }
+
     if (tab === "stats") {
       body.append(renderStats(progress));
       return;
@@ -98,6 +145,11 @@ export function createProgressView(): ProgressView {
 
     if (tab === "history") {
       body.append(renderHistory(progress.runs));
+      return;
+    }
+
+    if (tab === "codex") {
+      body.append(renderCodex(progress));
       return;
     }
 
@@ -234,6 +286,33 @@ function renderAchievements(progress: PlayerProgress): HTMLElement {
       card.append(reward);
     }
 
+    list.append(card);
+  }
+
+  return list;
+}
+
+function renderCodex(progress: PlayerProgress): HTMLElement {
+  if (!hasUnlock(progress, "codex-reactions")) {
+    const locked = document.createElement("p");
+    locked.className = "progress-empty";
+    locked.textContent = "Unlock Reaction Adept to open the Codex.";
+    return locked;
+  }
+
+  const list = document.createElement("div");
+  list.className = "codex-list";
+
+  for (const entry of CODEX_ENTRIES) {
+    const card = document.createElement("article");
+    card.className = "codex-card";
+    const name = document.createElement("h3");
+    name.textContent = entry.name;
+    const difficulty = document.createElement("p");
+    difficulty.textContent = difficultyName(entry.difficulty);
+    const summary = document.createElement("p");
+    summary.textContent = entry.summary;
+    card.append(name, difficulty, summary);
     list.append(card);
   }
 

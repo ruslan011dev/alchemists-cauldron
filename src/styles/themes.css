@@ -1,0 +1,94 @@
+html[data-theme="night-lab"] {
+  --ink: #d7e7ff;
+  --muted: #9db0c9;
+  --bg: #070d18;
+  --panel: #121c2e;
+  --panel-raised: #18263c;
+  --line: #3d5c86;
+  --gold: #8fd0ff;
+  --ember: #3d7ec9;
+  --ember-deep: #1d4e86;
+}
+
+html[data-theme="night-lab"] body {
+  background:
+    radial-gradient(ellipse at 50% -20%, #1a3358 0%, transparent 52%),
+    radial-gradient(ellipse at 100% 100%, #0c1c33 0%, transparent 42%),
+    var(--bg);
+}
+
+html[data-theme="night-lab"] .title-line--main {
+  text-shadow: 0 0 18px rgb(80 150 220 / 55%);
+}
+
+html[data-theme="night-lab"] .start-button,
+html[data-theme="night-lab"] .brew-button {
+  background: linear-gradient(
+    180deg,
+    #6aa7e8,
+    var(--ember) 55%,
+    var(--ember-deep)
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(210 230 255 / 45%),
+    0 3px 0 #123456;
+}
+
+html[data-theme="night-lab"] .game-over {
+  border-color: #3d5c86;
+  background:
+    radial-gradient(ellipse at 50% 120%, rgb(40 90 160 / 48%), transparent 48%),
+    radial-gradient(ellipse at 50% 0%, rgb(143 208 255 / 14%), transparent 42%),
+    #070d18;
+}
+
+html[data-theme="parchment"] {
+  --ink: #2c2118;
+  --muted: #6d5b48;
+  --bg: #f3e6cf;
+  --panel: #fff8ee;
+  --panel-raised: #f7efe0;
+  --line: #c4a57a;
+  --gold: #8a5a12;
+  --shadow: 0 18px 40px rgb(80 50 20 / 12%);
+}
+
+html[data-theme="parchment"] body {
+  background:
+    radial-gradient(ellipse at 50% -20%, #f7e7c4 0%, transparent 52%),
+    radial-gradient(ellipse at 100% 100%, #e7d3ae 0%, transparent 42%),
+    var(--bg);
+}
+
+html[data-theme="parchment"] .title-line--main,
+html[data-theme="parchment"] .game-over h2,
+html[data-theme="parchment"] .leaderboard h2,
+html[data-theme="parchment"] .progress h2 {
+  color: #3a2a1c;
+  text-shadow: none;
+  animation: none;
+}
+
+html[data-theme="parchment"] .game-over {
+  border-color: #c4a57a;
+  background:
+    radial-gradient(
+      ellipse at 50% 120%,
+      rgb(180 120 60 / 22%),
+      transparent 48%
+    ),
+    #f3e6cf;
+}
+
+html[data-theme="parchment"] .game-over-kicker,
+html[data-theme="parchment"] .game-over-score,
+html[data-theme="parchment"] .game-over-achievements {
+  color: #6a4312;
+  text-shadow: none;
+}
+
+html[data-theme="parchment"] .pause-button,
+html[data-theme="parchment"] .pause-exit {
+  background: rgb(90 60 30 / 6%);
+  color: var(--ink);
+}

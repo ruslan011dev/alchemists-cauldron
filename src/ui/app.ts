@@ -41,6 +41,7 @@ import { bindCauldronDrop, suppressNextClick } from "./drag";
 import { formatRange } from "./format";
 import { renderLeaderboard } from "./leaderboard";
 import { createProgressView } from "./progress";
+import { applySavedTheme } from "./theme";
 import { shortcutFromEvent, type PlayGate } from "./keyboard";
 import { renderShelf } from "./shelf";
 
@@ -71,6 +72,7 @@ function brewMessage(state: GameState): string {
 const NAME_ERROR = "Use 2–15 letters, digits, spaces, _ or -.";
 
 export function renderApp(root: HTMLElement): void {
+  applySavedTheme(loadProgress().unlocks);
   let state = createInitialState();
   let showLeaderboard = false;
   let showProgress = false;
