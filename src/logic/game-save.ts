@@ -14,6 +14,11 @@ export interface SavedGame {
   cauldronIngredients: IIngredient[];
   shelfStock: Record<string, number>;
   status: GameStatus;
+  successfulBrews: number;
+  failedBrews: number;
+  reactionsFired: number;
+  successStreak: number;
+  bestSuccessStreak: number;
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -119,6 +124,25 @@ export function isValidSave(data: unknown): SavedGame | null {
     return null;
   }
 
+  const successfulBrews = readCounter(data.successfulBrews);
+  const failedBrews = readCounter(data.failedBrews);
+  const reactionsFired = readCounter(data.reactionsFired);
+  const successStreak = readCounter(data.successStreak);
+  const bestSuccessStreak = readCounter(
+    data.bestSuccessStreak,
+    successStreak ?? 0,
+  );
+
+  if (
+    successfulBrews === null ||
+    failedBrews === null ||
+    reactionsFired === null ||
+    successStreak === null ||
+    bestSuccessStreak === null
+  ) {
+    return null;
+  }
+
   return {
     difficulty: data.difficulty,
     score,
@@ -128,5 +152,22 @@ export function isValidSave(data: unknown): SavedGame | null {
     cauldronIngredients: cauldron,
     shelfStock,
     status: data.status,
+    successfulBrews,
+    failedBrews,
+    reactionsFired,
+    successStreak,
+    bestSuccessStreak: Math.max(bestSuccessStreak, successStreak),
   };
+}
+
+function readCounter(value: unknown, fallback = 0): number | null {
+  if (value === undefined) {
+    return fallback;
+  }
+
+  if (typeof value === "number" && Number.isInteger(value) && value >= 0) {
+    return value;
+  }
+
+  return null;
 }
