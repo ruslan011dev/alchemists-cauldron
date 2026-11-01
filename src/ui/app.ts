@@ -15,6 +15,10 @@ import {
   loadLeaderboard,
 } from "../storage/leaderboard";
 import {
+  recordFinishedRun,
+  unlockedAchievementNames,
+} from "../storage/progress";
+import {
   addToCauldron,
   brewPotion,
   canAddIngredient,
@@ -68,6 +72,8 @@ export function renderApp(root: HTMLElement): void {
   let state = createInitialState();
   let showLeaderboard = false;
   let scoreSaved = false;
+  let progressRecorded = false;
+  let unlockedNotice = "";
   let hasContinue = loadGame() !== null;
 
   const title = document.createElement("h1");
@@ -266,6 +272,8 @@ export function renderApp(root: HTMLElement): void {
   gameOverReason.className = "game-over-reason";
   const gameOverScore = document.createElement("p");
   gameOverScore.className = "game-over-score";
+  const gameOverAchievements = document.createElement("p");
+  gameOverAchievements.className = "game-over-achievements";
   const nameForm = document.createElement("form");
   nameForm.className = "name-form";
   const nameLabel = document.createElement("label");
@@ -304,6 +312,7 @@ export function renderApp(root: HTMLElement): void {
     gameOverTitle,
     gameOverReason,
     gameOverScore,
+    gameOverAchievements,
     gameOverPlate,
   );
 
@@ -486,6 +495,8 @@ export function renderApp(root: HTMLElement): void {
       gameOverKicker.textContent = GAME_OVER_KICKER[state.gameOverReason];
       gameOverReason.textContent = GAME_OVER_TEXT[state.gameOverReason];
       gameOverScore.textContent = `Final score: ${state.score}`;
+      gameOverAchievements.textContent = unlockedNotice;
+      gameOverAchievements.hidden = unlockedNotice === "";
       nameForm.hidden =
         scoreSaved ||
         !isTopTenScore(loadLeaderboard(state.difficulty), state.score);
@@ -546,10 +557,29 @@ export function renderApp(root: HTMLElement): void {
 
     saveGame(state);
     hasContinue = state.gameOverReason === null;
+
+    if (!state.gameOverReason || progressRecorded) {
+      return;
+    }
+
+    const update = recordFinishedRun(state);
+    progressRecorded = true;
+    if (!update || update.newlyUnlocked.length === 0) {
+      unlockedNotice = "";
+      return;
+    }
+
+    const names = unlockedAchievementNames(update.newlyUnlocked);
+    unlockedNotice =
+      names.length === 1
+        ? `Achievement unlocked: ${names[0]}`
+        : `Achievements unlocked: ${names.join(", ")}`;
   };
 
   const beginRun = (): void => {
     scoreSaved = false;
+    progressRecorded = false;
+    unlockedNotice = "";
     showLeaderboard = false;
     nameInput.value = "";
     nameError.textContent = "";
@@ -586,6 +616,8 @@ export function renderApp(root: HTMLElement): void {
     }
 
     scoreSaved = false;
+    progressRecorded = false;
+    unlockedNotice = "";
     showLeaderboard = false;
     nameInput.value = "";
     nameError.textContent = "";
@@ -718,6 +750,8 @@ export function renderApp(root: HTMLElement): void {
 
   exit.addEventListener("click", () => {
     scoreSaved = false;
+    progressRecorded = false;
+    unlockedNotice = "";
     showLeaderboard = false;
     nameInput.value = "";
     nameError.textContent = "";

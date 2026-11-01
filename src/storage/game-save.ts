@@ -34,6 +34,11 @@ export function saveGame(state: GameState): boolean {
     cauldronIngredients: state.cauldronIngredients.map((item) => item.id),
     shelfStock: state.shelfStock,
     status: statusOf(state),
+    successfulBrews: state.successfulBrews,
+    failedBrews: state.failedBrews,
+    reactionsFired: state.reactionsFired,
+    successStreak: state.successStreak,
+    bestSuccessStreak: state.bestSuccessStreak,
   };
 
   try {
