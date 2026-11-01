@@ -15,6 +15,7 @@ import {
   loadLeaderboard,
 } from "../storage/leaderboard";
 import {
+  loadProgress,
   recordFinishedRun,
   unlockedAchievementNames,
 } from "../storage/progress";
@@ -39,6 +40,7 @@ import { renderCauldron } from "./cauldron";
 import { bindCauldronDrop, suppressNextClick } from "./drag";
 import { formatRange } from "./format";
 import { renderLeaderboard } from "./leaderboard";
+import { createProgressView } from "./progress";
 import { shortcutFromEvent, type PlayGate } from "./keyboard";
 import { renderShelf } from "./shelf";
 
@@ -71,6 +73,7 @@ const NAME_ERROR = "Use 2–15 letters, digits, spaces, _ or -.";
 export function renderApp(root: HTMLElement): void {
   let state = createInitialState();
   let showLeaderboard = false;
+  let showProgress = false;
   let scoreSaved = false;
   let progressRecorded = false;
   let unlockedNotice = "";
@@ -165,6 +168,11 @@ export function renderApp(root: HTMLElement): void {
   openBoard.className = "pause-button";
   openBoard.textContent = "Leaderboard";
 
+  const openProgress = document.createElement("button");
+  openProgress.type = "button";
+  openProgress.className = "pause-button";
+  openProgress.textContent = "Progress";
+
   const helpButton = document.createElement("button");
   helpButton.type = "button";
   helpButton.className = "pause-button";
@@ -214,6 +222,7 @@ export function renderApp(root: HTMLElement): void {
     helpButton,
     settingsButton,
     openBoard,
+    openProgress,
     pause,
   );
 
@@ -302,7 +311,11 @@ export function renderApp(root: HTMLElement): void {
   openBoardFromOver.type = "button";
   openBoardFromOver.className = "pause-button";
   openBoardFromOver.textContent = "Leaderboard";
-  gameOverActions.append(playAgain, openBoardFromOver);
+  const openProgressFromOver = document.createElement("button");
+  openProgressFromOver.type = "button";
+  openProgressFromOver.className = "pause-button";
+  openProgressFromOver.textContent = "Progress";
+  gameOverActions.append(playAgain, openBoardFromOver, openProgressFromOver);
   const gameOverPlate = document.createElement("div");
   gameOverPlate.className = "game-over-plate";
   gameOverPlate.append(nameForm, gameOverActions);
@@ -350,6 +363,8 @@ export function renderApp(root: HTMLElement): void {
   back.textContent = "Back";
   boardActions.append(clearBoard, back);
   board.append(boardTitle, boardMessage, tableWrap, boardActions);
+
+  const progressView = createProgressView();
 
   const confirmDialog = document.createElement("dialog");
   confirmDialog.className = "pause-dialog";
@@ -429,6 +444,7 @@ export function renderApp(root: HTMLElement): void {
     pauseDialog,
     gameOver,
     board,
+    progressView.root,
     confirmDialog,
     helpDialog,
     settingsDialog,
@@ -444,16 +460,15 @@ export function renderApp(root: HTMLElement): void {
   const paint = (): void => {
     const recipe = state.activeRecipe;
     const over = state.gameOverReason !== null;
-    const playing = state.started && !over && !state.paused && !showLeaderboard;
-    field.hidden = over || showLeaderboard;
+    const overlay = showLeaderboard || showProgress;
+    const playing = state.started && !over && !state.paused && !overlay;
+    field.hidden = over || overlay;
     field.classList.toggle("is-paused", state.paused);
     field.inert = state.paused;
-    gameOver.hidden = !over || showLeaderboard;
+    gameOver.hidden = !over || overlay;
     board.hidden = !showLeaderboard;
-    masthead.classList.toggle(
-      "is-title-screen",
-      !state.started && !showLeaderboard,
-    );
+    progressView.root.hidden = !showProgress;
+    masthead.classList.toggle("is-title-screen", !state.started && !overlay);
     scoreValue.textContent = String(state.started ? state.score : 0);
     status.setAttribute("aria-label", `Score ${scoreValue.textContent}`);
     continueButton.hidden = state.started || !hasContinue;
@@ -461,6 +476,7 @@ export function renderApp(root: HTMLElement): void {
     helpButton.hidden = state.started;
     settingsButton.hidden = state.started;
     openBoard.hidden = state.started;
+    openProgress.hidden = state.started;
     pause.hidden = !playing;
     const maxLives = DIFFICULTY_SETTINGS[state.difficulty].lives;
     if (lives.children.length !== maxLives) {
@@ -512,6 +528,10 @@ export function renderApp(root: HTMLElement): void {
     if (showLeaderboard) {
       renderLeaderboard(tableBody, loadLeaderboard(state.difficulty));
       boardMessage.hidden = boardMessage.textContent === "";
+    }
+
+    if (showProgress) {
+      progressView.render(loadProgress());
     }
 
     renderBars(
@@ -581,6 +601,7 @@ export function renderApp(root: HTMLElement): void {
     progressRecorded = false;
     unlockedNotice = "";
     showLeaderboard = false;
+    showProgress = false;
     nameInput.value = "";
     nameError.textContent = "";
     state = startGame(state);
@@ -619,6 +640,7 @@ export function renderApp(root: HTMLElement): void {
     progressRecorded = false;
     unlockedNotice = "";
     showLeaderboard = false;
+    showProgress = false;
     nameInput.value = "";
     nameError.textContent = "";
     state = continueGame(save);
@@ -694,7 +716,7 @@ export function renderApp(root: HTMLElement): void {
   pause.addEventListener("click", runPause);
 
   const playGate = (): PlayGate => {
-    if (!state.started || showLeaderboard) {
+    if (!state.started || showLeaderboard || showProgress) {
       return "menu";
     }
 
@@ -753,6 +775,7 @@ export function renderApp(root: HTMLElement): void {
     progressRecorded = false;
     unlockedNotice = "";
     showLeaderboard = false;
+    showProgress = false;
     nameInput.value = "";
     nameError.textContent = "";
     hasContinue = !clearSave() && loadGame() !== null;
@@ -762,15 +785,29 @@ export function renderApp(root: HTMLElement): void {
 
   const openLeaderboard = (): void => {
     showLeaderboard = true;
+    showProgress = false;
     boardMessage.textContent = "";
+    paint();
+  };
+
+  const openProgressScreen = (): void => {
+    showProgress = true;
+    showLeaderboard = false;
     paint();
   };
 
   openBoard.addEventListener("click", openLeaderboard);
   openBoardFromOver.addEventListener("click", openLeaderboard);
+  openProgress.addEventListener("click", openProgressScreen);
+  openProgressFromOver.addEventListener("click", openProgressScreen);
 
   back.addEventListener("click", () => {
     showLeaderboard = false;
+    paint();
+  });
+
+  progressView.back.addEventListener("click", () => {
+    showProgress = false;
     paint();
   });
 
