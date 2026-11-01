@@ -134,7 +134,8 @@ h1 {
 
 .game-field,
 .game-over,
-.leaderboard {
+.leaderboard,
+.progress {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -145,6 +146,7 @@ h1 {
 .game-field[hidden],
 .game-over[hidden],
 .leaderboard[hidden],
+.progress[hidden],
 .name-form[hidden] {
   display: none !important;
 }
@@ -352,6 +354,7 @@ h1 {
 .panel,
 .game-over,
 .leaderboard,
+.progress,
 .pause-card {
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -373,6 +376,7 @@ h1 {
 .recipe-title,
 .game-over h2,
 .leaderboard h2,
+.progress h2,
 .pause-card h2 {
   width: 100%;
   text-align: center;
@@ -887,7 +891,8 @@ h1 {
 }
 
 .game-over,
-.leaderboard {
+.leaderboard,
+.progress {
   max-width: 760px;
   padding: 28px 18px 22px;
 }
@@ -1111,14 +1116,16 @@ h1 {
   font-weight: 600;
 }
 
-.leaderboard {
+.leaderboard,
+.progress {
   background:
     radial-gradient(ellipse at 50% 0%, rgb(228 193 106 / 16%), transparent 42%),
     linear-gradient(180deg, rgb(255 220 170 / 5%), transparent 28%),
     var(--panel);
 }
 
-.leaderboard h2 {
+.leaderboard h2,
+.progress h2 {
   font-size: clamp(1.7rem, 6vw, 2.7rem);
   letter-spacing: 0.14em;
   text-indent: 0.14em;
@@ -1326,4 +1333,93 @@ h1 {
   .status-line {
     align-items: center;
   }
+}
+
+.progress-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+}
+
+.progress-tab.is-selected {
+  border-color: var(--gold);
+  color: var(--gold);
+}
+
+.progress-body {
+  width: 100%;
+}
+
+.progress-empty {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+}
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.stat-card {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid #3d2e26;
+  border-radius: 14px;
+  background: rgb(255 244 220 / 3%);
+}
+
+.stat-card dt {
+  color: var(--muted);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.stat-card dd {
+  margin: 6px 0 0;
+  font-size: 1.15rem;
+}
+
+.achievement-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.achievement {
+  padding: 12px 14px;
+  border: 1px solid #3d2e26;
+  border-radius: 14px;
+  background: rgb(255 244 220 / 3%);
+}
+
+.achievement.is-open {
+  border-color: rgb(228 193 106 / 55%);
+}
+
+.achievement.is-locked {
+  opacity: 0.62;
+}
+
+.achievement h3,
+.achievement p {
+  margin: 0;
+}
+
+.achievement h3 {
+  font-size: 1.05rem;
+}
+
+.achievement p {
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.achievement-status {
+  color: var(--gold);
 }
