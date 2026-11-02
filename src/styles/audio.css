@@ -1,0 +1,13 @@
+.settings-label {
+  width: 100%;
+  margin: 8px 0 0;
+  color: var(--gold);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.sound-button {
+  width: 100%;
+}
