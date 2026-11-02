@@ -42,6 +42,7 @@ import { formatRange } from "./format";
 import { renderLeaderboard } from "./leaderboard";
 import { createProgressView } from "./progress";
 import { applySavedTheme } from "./theme";
+import { createGameAudio } from "./audio";
 import { shortcutFromEvent, type PlayGate } from "./keyboard";
 import { renderShelf } from "./shelf";
 
@@ -73,6 +74,7 @@ const NAME_ERROR = "Use 2–15 letters, digits, spaces, _ or -.";
 
 export function renderApp(root: HTMLElement): void {
   applySavedTheme(loadProgress().unlocks);
+  const audio = createGameAudio();
   let state = createInitialState();
   let showLeaderboard = false;
   let showProgress = false;
@@ -420,7 +422,7 @@ export function renderApp(root: HTMLElement): void {
   settingsCard.className = "pause-card";
   const settingsTitle = document.createElement("h2");
   settingsTitle.id = "settings-title";
-  settingsTitle.textContent = "Difficulty";
+  settingsTitle.textContent = "Settings";
   const difficultyButtons: HTMLButtonElement[] = [];
   for (const difficulty of DIFFICULTIES) {
     const button = document.createElement("button");
@@ -431,6 +433,40 @@ export function renderApp(root: HTMLElement): void {
     difficultyButtons.push(button);
     settingsCard.append(button);
   }
+  const soundTitle = document.createElement("h3");
+  soundTitle.className = "settings-label";
+  soundTitle.textContent = "Sound";
+  const musicButton = document.createElement("button");
+  musicButton.type = "button";
+  musicButton.className = "pause-button difficulty-button sound-button";
+  const effectsButton = document.createElement("button");
+  effectsButton.type = "button";
+  effectsButton.className = "pause-button difficulty-button sound-button";
+  const paintSound = (): void => {
+    const current = audio.settings();
+    musicButton.textContent = `Music: ${current.music ? "On" : "Off"}`;
+    effectsButton.textContent = `Effects: ${current.effects ? "On" : "Off"}`;
+    musicButton.classList.toggle("is-selected", current.music);
+    effectsButton.classList.toggle("is-selected", current.effects);
+    musicButton.setAttribute("aria-pressed", current.music ? "true" : "false");
+    effectsButton.setAttribute(
+      "aria-pressed",
+      current.effects ? "true" : "false",
+    );
+  };
+  paintSound();
+  musicButton.addEventListener("click", () => {
+    audio.unlock();
+    audio.toggle("music");
+    paintSound();
+  });
+  effectsButton.addEventListener("click", () => {
+    audio.unlock();
+    audio.toggle("effects");
+    paintSound();
+    audio.play("success");
+  });
+  settingsCard.append(soundTitle, musicButton, effectsButton);
   const settingsClose = document.createElement("button");
   settingsClose.type = "button";
   settingsClose.className = "start-button";
@@ -554,8 +590,10 @@ export function renderApp(root: HTMLElement): void {
       ? `Reaction: ${reactionLabel}`
       : "";
     renderShelf(shelf, state, (id) => {
+      const before = state;
       state = addToCauldron(state, id);
       remember();
+      hearCauldron(before);
       paint();
     });
     renderCauldron(cauldronBody, state.cauldronIngredients);
@@ -586,16 +624,32 @@ export function renderApp(root: HTMLElement): void {
 
     const update = recordFinishedRun(state);
     progressRecorded = true;
+    audio.play("game-over");
     if (!update || update.newlyUnlocked.length === 0) {
       unlockedNotice = "";
       return;
     }
 
+    audio.play("achievement");
     const names = unlockedAchievementNames(update.newlyUnlocked);
     unlockedNotice =
       names.length === 1
         ? `Achievement unlocked: ${names[0]}`
         : `Achievements unlocked: ${names.join(", ")}`;
+  };
+
+  const hearCauldron = (before: GameState): void => {
+    if (
+      state.lastReactionId &&
+      state.lastReactionId !== before.lastReactionId
+    ) {
+      audio.play("reaction");
+      return;
+    }
+
+    if (state.cauldronIngredients.length > before.cauldronIngredients.length) {
+      audio.play("add");
+    }
   };
 
   const beginRun = (): void => {
@@ -615,6 +669,7 @@ export function renderApp(root: HTMLElement): void {
     cauldron,
     () => canAddIngredient(state),
     (id) => {
+      const before = state;
       const next = addToCauldron(state, id);
       if (next === state) {
         return;
@@ -623,6 +678,7 @@ export function renderApp(root: HTMLElement): void {
       suppressNextClick();
       state = next;
       remember();
+      hearCauldron(before);
       paint();
     },
   );
@@ -691,6 +747,10 @@ export function renderApp(root: HTMLElement): void {
       return;
     }
 
+    if (!state.gameOverReason) {
+      audio.play(state.lastBrew === "success" ? "success" : "failure");
+    }
+
     if (state.lastBrew === "success") {
       field.classList.remove("is-shaking");
       replayAnimation(cauldron, "is-brew-success");
@@ -702,9 +762,17 @@ export function renderApp(root: HTMLElement): void {
   };
 
   const runPour = (): void => {
+    const before = state;
     state = pourOut(state);
     remember();
     paint();
+    if (
+      before.cauldronIngredients.length > 0 &&
+      state.cauldronIngredients.length === 0 &&
+      !state.gameOverReason
+    ) {
+      audio.play("pour");
+    }
   };
 
   const runPause = (): void => {
@@ -732,6 +800,10 @@ export function renderApp(root: HTMLElement): void {
 
     return "playing";
   };
+
+  document.addEventListener("pointerdown", () => {
+    audio.unlock();
+  });
 
   document.addEventListener("keydown", (event) => {
     const shortcut = shortcutFromEvent(event, playGate());
@@ -761,8 +833,10 @@ export function renderApp(root: HTMLElement): void {
       return;
     }
 
+    const before = state;
     state = addToCauldron(state, ingredient.id);
     remember();
+    hearCauldron(before);
     paint();
   });
 
