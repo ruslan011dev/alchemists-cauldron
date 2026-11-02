@@ -43,6 +43,7 @@ import { renderLeaderboard } from "./leaderboard";
 import { createProgressView } from "./progress";
 import { applySavedTheme } from "./theme";
 import { createGameAudio } from "./audio";
+import { listenForInstall, watchConnection } from "./install";
 import { shortcutFromEvent, type PlayGate } from "./keyboard";
 import { renderShelf } from "./shelf";
 
@@ -75,6 +76,7 @@ const NAME_ERROR = "Use 2–15 letters, digits, spaces, _ or -.";
 export function renderApp(root: HTMLElement): void {
   applySavedTheme(loadProgress().unlocks);
   const audio = createGameAudio();
+  let installPrompt: (() => Promise<void>) | null = null;
   let state = createInitialState();
   let showLeaderboard = false;
   let showProgress = false;
@@ -177,6 +179,16 @@ export function renderApp(root: HTMLElement): void {
   openProgress.className = "pause-button";
   openProgress.textContent = "Progress";
 
+  const installButton = document.createElement("button");
+  installButton.type = "button";
+  installButton.className = "pause-button install-button";
+  installButton.textContent = "Install";
+  installButton.hidden = true;
+
+  const offlineNote = document.createElement("p");
+  offlineNote.className = "offline-note";
+  offlineNote.textContent = "Offline. Saved progress still works.";
+
   const helpButton = document.createElement("button");
   helpButton.type = "button";
   helpButton.className = "pause-button";
@@ -227,6 +239,7 @@ export function renderApp(root: HTMLElement): void {
     settingsButton,
     openBoard,
     openProgress,
+    installButton,
     pause,
   );
 
@@ -405,6 +418,7 @@ export function renderApp(root: HTMLElement): void {
     "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life. Pour Out empties the cauldron for 10 seconds, keeps the life, and does not return the ingredients. On Medium and Hard, some mixes start a reaction that changes the bars, the clock, or the cauldron. The same mix does not trigger twice until it breaks.",
     "The run ends when time runs out, lives reach 0, or the shelf and the cauldron are both empty. Pause stops the clock. An unfinished game can be continued after the page is reloaded.",
     "During a run, P pauses, B brews, O pours out, and 1–8 adds the ingredient in that shelf slot. These keys do nothing on the start screen, the pause screen, or the game over screen. Resume with the Resume button.",
+    "Install keeps a copy on this device. After one online visit, the game can open without a network. Progress, themes, and sound settings stay in the browser.",
   ]) {
     const paragraph = document.createElement("p");
     paragraph.className = "rules-text";
@@ -478,6 +492,7 @@ export function renderApp(root: HTMLElement): void {
 
   root.replaceChildren(
     masthead,
+    offlineNote,
     field,
     pauseDialog,
     gameOver,
@@ -515,6 +530,7 @@ export function renderApp(root: HTMLElement): void {
     settingsButton.hidden = state.started;
     openBoard.hidden = state.started;
     openProgress.hidden = state.started;
+    installButton.hidden = state.started || installPrompt === null;
     pause.hidden = !playing;
     const maxLives = DIFFICULTY_SETTINGS[state.difficulty].lives;
     if (lives.children.length !== maxLives) {
@@ -876,6 +892,24 @@ export function renderApp(root: HTMLElement): void {
   openBoardFromOver.addEventListener("click", openLeaderboard);
   openProgress.addEventListener("click", openProgressScreen);
   openProgressFromOver.addEventListener("click", openProgressScreen);
+
+  listenForInstall((prompt) => {
+    installPrompt = prompt;
+    paint();
+  });
+
+  installButton.addEventListener("click", () => {
+    const prompt = installPrompt;
+    if (!prompt) {
+      return;
+    }
+
+    installPrompt = null;
+    void prompt();
+    paint();
+  });
+
+  watchConnection(offlineNote);
 
   back.addEventListener("click", () => {
     showLeaderboard = false;

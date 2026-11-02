@@ -5,5 +5,15 @@ export default defineConfig(({ command, isPreview }) => ({
   build: {
     outDir: "dist",
     emptyOutDir: true,
+    rollupOptions: {
+      input: {
+        main: "index.html",
+        sw: "src/pwa/sw.ts",
+      },
+      output: {
+        entryFileNames: (chunkInfo) =>
+          chunkInfo.name === "sw" ? "sw.js" : "assets/[name]-[hash].js",
+      },
+    },
   },
 }));

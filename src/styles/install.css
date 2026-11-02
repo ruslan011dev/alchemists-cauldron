@@ -1,0 +1,12 @@
+.offline-note {
+  width: 100%;
+  margin: 0;
+  color: var(--gold);
+  font-size: 0.95rem;
+  text-align: center;
+}
+
+.install-button[hidden],
+.offline-note[hidden] {
+  display: none !important;
+}
