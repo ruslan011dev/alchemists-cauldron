@@ -50,10 +50,12 @@ describe("player progress", () => {
       ACHIEVEMENTS,
     );
 
-    assert.deepEqual(update.newlyUnlocked, ["first-brew"]);
+    assert.deepEqual(update.newlyUnlocked, ["first-brew", "apprentice"]);
     assert.equal(hasAchievement(update.progress, "first-brew"), true);
+    assert.equal(hasAchievement(update.progress, "apprentice"), true);
     assert.equal(hasUnlock(update.progress, "theme-night-lab"), true);
-    assert.equal(hasUnlock(update.progress, "theme-parchment"), false);
+    assert.equal(hasUnlock(update.progress, "theme-parchment"), true);
+    assert.equal(hasUnlock(update.progress, "codex-reactions"), false);
     assert.equal(update.progress.stats.totalSuccessfulBrews, 1);
     assert.equal(update.progress.stats.bestScoreByDifficulty.medium, 200);
   });
@@ -69,7 +71,7 @@ describe("player progress", () => {
     assert.equal(hasAchievement(update.progress, "first-brew"), false);
   });
 
-  it("unlocks the apprentice theme only once the lifetime total reaches 5", () => {
+  it("keeps the parchment theme after the first successful brew", () => {
     const first = applyRun(
       createEmptyProgress(),
       makeRun({ successfulBrews: 1, score: 100 }),
@@ -79,16 +81,15 @@ describe("player progress", () => {
       first.progress,
       makeRun({
         playedAt: 1_700_000_100_000,
-        successfulBrews: 4,
+        successfulBrews: 1,
         score: 400,
       }),
       ACHIEVEMENTS,
     );
 
-    assert.equal(second.newlyUnlocked.includes("first-brew"), false);
-    assert.equal(second.newlyUnlocked.includes("apprentice"), true);
-    assert.equal(hasUnlock(second.progress, "theme-parchment"), true);
-    assert.equal(second.progress.stats.totalSuccessfulBrews, 5);
+    assert.equal(hasUnlock(first.progress, "theme-parchment"), true);
+    assert.equal(second.newlyUnlocked.includes("apprentice"), false);
+    assert.equal(second.progress.stats.totalSuccessfulBrews, 2);
     assert.equal(second.progress.runs[0]?.playedAt, 1_700_000_100_000);
   });
 
@@ -136,15 +137,16 @@ describe("player progress", () => {
     assert.equal(hasAchievement(empty.progress, "survivor"), false);
   });
 
-  it("opens the reaction codex after five reactions", () => {
+  it("opens the reaction codex after one reaction", () => {
     const update = applyRun(
       createEmptyProgress(),
-      makeRun({ reactionsFired: 5 }),
+      makeRun({ reactionsFired: 1 }),
       ACHIEVEMENTS,
     );
 
     assert.equal(hasAchievement(update.progress, "reaction-adept"), true);
     assert.equal(hasUnlock(update.progress, "codex-reactions"), true);
+    assert.equal(hasUnlock(update.progress, "theme-parchment"), false);
   });
 
   it("unlocks a hot streak, a saved stock, and a high score from one run", () => {

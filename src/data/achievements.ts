@@ -19,9 +19,9 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
   {
     id: "apprentice",
     name: "Apprentice",
-    description: "Succeed 5 brews across all runs.",
+    description: "Succeed at least one brew.",
     unlockId: "theme-parchment",
-    isComplete: (progress) => lifetime(progress).totalSuccessfulBrews >= 5,
+    isComplete: (progress) => lifetime(progress).totalSuccessfulBrews >= 1,
   },
   {
     id: "journeyman",
@@ -46,9 +46,9 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
   {
     id: "reaction-adept",
     name: "Reaction Adept",
-    description: "Trigger 5 reactions across all runs.",
+    description: "Trigger at least one reaction.",
     unlockId: "codex-reactions",
-    isComplete: (progress) => lifetime(progress).totalReactionsFired >= 5,
+    isComplete: (progress) => lifetime(progress).totalReactionsFired >= 1,
   },
   {
     id: "streak-three",
