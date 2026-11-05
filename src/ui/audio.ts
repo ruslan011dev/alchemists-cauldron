@@ -21,6 +21,8 @@ interface Tone {
   peak: number;
 }
 
+const MUSIC_URL = `${import.meta.env.BASE_URL}music/retro-arcade.mp3`;
+
 const CUES: Record<SoundCue, readonly Tone[]> = {
   add: [
     { frequency: 640, offset: 0, duration: 0.09, type: "sine", peak: 0.05 },
@@ -83,7 +85,7 @@ export function createGameAudio(
 ): GameAudio {
   let settings = initial;
   let context: AudioContext | null = null;
-  let musicGain: GainNode | null = null;
+  let music: HTMLAudioElement | null = null;
   let nextStart = 0;
 
   const ensure = (): AudioContext | null => {
@@ -98,36 +100,27 @@ export function createGameAudio(
     return context;
   };
 
-  const ensureMusic = (ctx: AudioContext): GainNode => {
-    if (musicGain) {
-      return musicGain;
+  const ensureMusic = (): HTMLAudioElement => {
+    if (music) {
+      return music;
     }
 
-    const gain = ctx.createGain();
-    gain.gain.setValueAtTime(0, ctx.currentTime);
-    gain.connect(ctx.destination);
-
-    for (const frequency of [110, 164.81]) {
-      const oscillator = ctx.createOscillator();
-      oscillator.type = "sine";
-      oscillator.frequency.setValueAtTime(frequency, ctx.currentTime);
-      oscillator.connect(gain);
-      oscillator.start();
-    }
-
-    musicGain = gain;
-    return gain;
+    const track = new Audio(MUSIC_URL);
+    track.loop = true;
+    track.preload = "auto";
+    track.volume = 0.35;
+    music = track;
+    return track;
   };
 
-  const setMusicLevel = (): void => {
-    const ctx = context;
-    if (!ctx || !musicGain) {
+  const syncMusic = (): void => {
+    if (!settings.music) {
+      music?.pause();
       return;
     }
 
-    const now = ctx.currentTime;
-    musicGain.gain.cancelScheduledValues(now);
-    musicGain.gain.setTargetAtTime(settings.music ? 0.02 : 0, now, 0.08);
+    const track = ensureMusic();
+    void track.play().catch(() => undefined);
   };
 
   const playTone = (ctx: AudioContext, tone: Tone, start: number): void => {
@@ -146,13 +139,8 @@ export function createGameAudio(
 
   return {
     unlock(): void {
-      const ctx = ensure();
-      if (!ctx) {
-        return;
-      }
-
-      ensureMusic(ctx);
-      setMusicLevel();
+      ensure();
+      syncMusic();
     },
     play(cue: SoundCue): void {
       if (!settings.effects) {
@@ -184,11 +172,7 @@ export function createGameAudio(
 
       settings = next;
       if (key === "music") {
-        const ctx = ensure();
-        if (ctx) {
-          ensureMusic(ctx);
-          setMusicLevel();
-        }
+        syncMusic();
       }
       return settings;
     },

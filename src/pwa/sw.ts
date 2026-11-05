@@ -1,10 +1,11 @@
-const CACHE = "cauldron-v1";
+const CACHE = "cauldron-v2";
 const SHELL = [
   "./",
   "./index.html",
   "./manifest.webmanifest",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
+  "./music/retro-arcade.mp3",
 ];
 
 interface WaitEvent {
