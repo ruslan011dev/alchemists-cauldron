@@ -9,7 +9,7 @@ import {
   type RunRecord,
   type UnlockId,
 } from "../logic/progress";
-import { canUseTheme, type ThemeId } from "../logic/theme";
+import { type ThemeId } from "../logic/theme";
 import { applySavedTheme, chooseTheme } from "./theme";
 
 type ProgressTab = "stats" | "history" | "achievements" | "codex";
@@ -21,14 +21,10 @@ const TABS: readonly { id: ProgressTab; label: string }[] = [
   { id: "codex", label: "Codex" },
 ];
 
-const THEME_CHOICES: readonly {
-  id: ThemeId;
-  label: string;
-  unlock?: UnlockId;
-}[] = [
+const THEME_CHOICES: readonly { id: ThemeId; label: string }[] = [
   { id: "classic", label: "Classic" },
-  { id: "night-lab", label: "Night Lab", unlock: "theme-night-lab" },
-  { id: "parchment", label: "Parchment", unlock: "theme-parchment" },
+  { id: "night-lab", label: "Night Lab" },
+  { id: "parchment", label: "Parchment" },
 ];
 
 const END_REASON: Record<RunEndReason, string> = {
@@ -76,11 +72,7 @@ export function createProgressView(): ProgressView {
     button.className = "pause-button theme-button";
     button.textContent = choice.label;
     button.addEventListener("click", () => {
-      if (!progress || !canUseTheme(choice.id, progress.unlocks)) {
-        return;
-      }
-
-      chooseTheme(choice.id, progress.unlocks);
+      chooseTheme(choice.id);
       paint();
     });
     themeButtons.set(choice.id, button);
@@ -131,11 +123,10 @@ export function createProgressView(): ProgressView {
       return;
     }
 
-    const activeTheme = applySavedTheme(progress.unlocks);
+    const activeTheme = applySavedTheme();
     for (const [id, button] of themeButtons) {
-      const open = canUseTheme(id, progress.unlocks);
-      button.disabled = !open;
-      button.classList.toggle("is-selected", open && id === activeTheme);
+      button.disabled = false;
+      button.classList.toggle("is-selected", id === activeTheme);
     }
 
     if (tab === "stats") {
@@ -184,10 +175,7 @@ function renderStats(progress: PlayerProgress): HTMLElement {
     ],
     ["Reactions", String(stats.totalReactionsFired)],
     ["Best streak", String(stats.bestSuccessStreak)],
-    [
-      "Unlocks",
-      `${progress.unlocks.length} / ${Object.keys(UNLOCK_NAME).length}`,
-    ],
+    ["Codex", hasUnlock(progress, "codex-reactions") ? "Open" : "Locked"],
   ];
 
   for (const [label, value] of rows) {

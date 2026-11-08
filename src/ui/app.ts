@@ -74,7 +74,7 @@ function brewMessage(state: GameState): string {
 const NAME_ERROR = "Use 2–15 letters, digits, spaces, _ or -.";
 
 export function renderApp(root: HTMLElement): void {
-  applySavedTheme(loadProgress().unlocks);
+  applySavedTheme();
   const audio = createGameAudio();
   let installPrompt: (() => Promise<void>) | null = null;
   let state = createInitialState();

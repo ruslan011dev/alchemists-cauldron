@@ -11,24 +11,16 @@ describe("themes", () => {
     assert.equal(isThemeId(null), false);
   });
 
-  it("keeps classic available before any unlock", () => {
-    assert.equal(canUseTheme("classic", []), true);
-    assert.equal(canUseTheme("night-lab", []), false);
-    assert.equal(canUseTheme("parchment", []), false);
-    assert.equal(resolveTheme(null, []), "classic");
-    assert.equal(resolveTheme("night-lab", []), "classic");
-  });
-
-  it("uses a saved theme only after its badge is unlocked", () => {
-    assert.equal(resolveTheme("night-lab", ["theme-night-lab"]), "night-lab");
-    assert.equal(resolveTheme("parchment", ["theme-night-lab"]), "classic");
-    assert.equal(resolveTheme("parchment", ["theme-parchment"]), "parchment");
+  it("keeps every theme available before any unlock", () => {
+    assert.equal(canUseTheme("classic"), true);
+    assert.equal(canUseTheme("night-lab"), true);
+    assert.equal(canUseTheme("parchment"), true);
+    assert.equal(resolveTheme(null), "classic");
+    assert.equal(resolveTheme("night-lab"), "night-lab");
+    assert.equal(resolveTheme("parchment"), "parchment");
   });
 
   it("falls back when the saved value is unknown", () => {
-    assert.equal(
-      resolveTheme("arcade", ["theme-night-lab", "theme-parchment"]),
-      "classic",
-    );
+    assert.equal(resolveTheme("arcade"), "classic");
   });
 });

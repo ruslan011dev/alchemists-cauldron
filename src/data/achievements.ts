@@ -13,14 +13,12 @@ export const ACHIEVEMENTS: readonly AchievementDefinition[] = [
     id: "first-brew",
     name: "First Brew",
     description: "Succeed at least one brew.",
-    unlockId: "theme-night-lab",
     isComplete: (progress) => lifetime(progress).totalSuccessfulBrews >= 1,
   },
   {
     id: "apprentice",
     name: "Apprentice",
     description: "Succeed at least one brew.",
-    unlockId: "theme-parchment",
     isComplete: (progress) => lifetime(progress).totalSuccessfulBrews >= 1,
   },
   {

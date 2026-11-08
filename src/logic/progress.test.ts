@@ -43,7 +43,7 @@ describe("player progress", () => {
     assert.equal(stockLeftTotal({ a: 2, b: 5 }), 7);
   });
 
-  it("unlocks the first brew and the night lab theme", () => {
+  it("records the first brew badges without locking the themes", () => {
     const update = applyRun(
       createEmptyProgress(),
       makeRun({ successfulBrews: 1, score: 200 }),
@@ -53,8 +53,8 @@ describe("player progress", () => {
     assert.deepEqual(update.newlyUnlocked, ["first-brew", "apprentice"]);
     assert.equal(hasAchievement(update.progress, "first-brew"), true);
     assert.equal(hasAchievement(update.progress, "apprentice"), true);
-    assert.equal(hasUnlock(update.progress, "theme-night-lab"), true);
-    assert.equal(hasUnlock(update.progress, "theme-parchment"), true);
+    assert.equal(hasUnlock(update.progress, "theme-night-lab"), false);
+    assert.equal(hasUnlock(update.progress, "theme-parchment"), false);
     assert.equal(hasUnlock(update.progress, "codex-reactions"), false);
     assert.equal(update.progress.stats.totalSuccessfulBrews, 1);
     assert.equal(update.progress.stats.bestScoreByDifficulty.medium, 200);
@@ -71,7 +71,7 @@ describe("player progress", () => {
     assert.equal(hasAchievement(update.progress, "first-brew"), false);
   });
 
-  it("keeps the parchment theme after the first successful brew", () => {
+  it("does not grant the first-brew badges again", () => {
     const first = applyRun(
       createEmptyProgress(),
       makeRun({ successfulBrews: 1, score: 100 }),
@@ -87,7 +87,7 @@ describe("player progress", () => {
       ACHIEVEMENTS,
     );
 
-    assert.equal(hasUnlock(first.progress, "theme-parchment"), true);
+    assert.equal(hasAchievement(first.progress, "apprentice"), true);
     assert.equal(second.newlyUnlocked.includes("apprentice"), false);
     assert.equal(second.progress.stats.totalSuccessfulBrews, 2);
     assert.equal(second.progress.runs[0]?.playedAt, 1_700_000_100_000);

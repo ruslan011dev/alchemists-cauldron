@@ -1,5 +1,4 @@
 import { resolveTheme, type ThemeId } from "../logic/theme";
-import type { UnlockId } from "../logic/progress";
 import { loadSavedTheme, saveTheme } from "../storage/theme";
 
 export function applyTheme(theme: ThemeId): void {
@@ -11,17 +10,14 @@ export function applyTheme(theme: ThemeId): void {
   document.documentElement.dataset.theme = theme;
 }
 
-export function applySavedTheme(unlocks: readonly UnlockId[]): ThemeId {
-  const theme = resolveTheme(loadSavedTheme(), unlocks);
+export function applySavedTheme(): ThemeId {
+  const theme = resolveTheme(loadSavedTheme());
   applyTheme(theme);
   return theme;
 }
 
-export function chooseTheme(
-  theme: ThemeId,
-  unlocks: readonly UnlockId[],
-): boolean {
-  const next = resolveTheme(theme, unlocks);
+export function chooseTheme(theme: ThemeId): boolean {
+  const next = resolveTheme(theme);
   if (next !== theme || !saveTheme(next)) {
     return false;
   }
