@@ -134,7 +134,8 @@ h1 {
 
 .game-field,
 .game-over,
-.leaderboard {
+.leaderboard,
+.progress {
   width: 100%;
   display: flex;
   flex-direction: column;
@@ -145,6 +146,7 @@ h1 {
 .game-field[hidden],
 .game-over[hidden],
 .leaderboard[hidden],
+.progress[hidden],
 .name-form[hidden] {
   display: none !important;
 }
@@ -352,6 +354,7 @@ h1 {
 .panel,
 .game-over,
 .leaderboard,
+.progress,
 .pause-card {
   border: 1px solid var(--line);
   border-radius: 20px;
@@ -373,6 +376,7 @@ h1 {
 .recipe-title,
 .game-over h2,
 .leaderboard h2,
+.progress h2,
 .pause-card h2 {
   width: 100%;
   text-align: center;
@@ -383,6 +387,7 @@ h1 {
 .brew-result,
 .game-over-reason,
 .game-over-score,
+.game-over-achievements,
 .board-message,
 .rules-text {
   margin: 0;
@@ -886,7 +891,8 @@ h1 {
 }
 
 .game-over,
-.leaderboard {
+.leaderboard,
+.progress {
   max-width: 760px;
   padding: 28px 18px 22px;
 }
@@ -928,6 +934,7 @@ h1 {
 .game-over-kicker,
 .game-over-reason,
 .game-over-score,
+.game-over-achievements,
 .game-over-plate {
   position: relative;
   z-index: 1;
@@ -953,6 +960,15 @@ h1 {
   font-size: clamp(1.8rem, 4vw, 2.6rem);
   color: var(--gold);
   text-shadow: 0 0 18px rgb(228 193 106 / 35%);
+}
+
+.game-over-achievements {
+  max-width: 22rem;
+  margin: 0;
+  color: #f0d9a8;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  text-wrap: balance;
 }
 
 .game-over-plate {
@@ -1100,14 +1116,16 @@ h1 {
   font-weight: 600;
 }
 
-.leaderboard {
+.leaderboard,
+.progress {
   background:
     radial-gradient(ellipse at 50% 0%, rgb(228 193 106 / 16%), transparent 42%),
     linear-gradient(180deg, rgb(255 220 170 / 5%), transparent 28%),
     var(--panel);
 }
 
-.leaderboard h2 {
+.leaderboard h2,
+.progress h2 {
   font-size: clamp(1.7rem, 6vw, 2.7rem);
   letter-spacing: 0.14em;
   text-indent: 0.14em;

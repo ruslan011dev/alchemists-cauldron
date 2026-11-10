@@ -15,6 +15,11 @@ import {
   loadLeaderboard,
 } from "../storage/leaderboard";
 import {
+  loadProgress,
+  recordFinishedRun,
+  unlockedAchievementNames,
+} from "../storage/progress";
+import {
   addToCauldron,
   brewPotion,
   canAddIngredient,
@@ -35,6 +40,10 @@ import { renderCauldron } from "./cauldron";
 import { bindCauldronDrop, suppressNextClick } from "./drag";
 import { formatRange } from "./format";
 import { renderLeaderboard } from "./leaderboard";
+import { createProgressView } from "./progress";
+import { applySavedTheme } from "./theme";
+import { createGameAudio } from "./audio";
+import { listenForInstall, watchConnection } from "./install";
 import { shortcutFromEvent, type PlayGate } from "./keyboard";
 import { renderShelf } from "./shelf";
 
@@ -65,9 +74,15 @@ function brewMessage(state: GameState): string {
 const NAME_ERROR = "Use 2–15 letters, digits, spaces, _ or -.";
 
 export function renderApp(root: HTMLElement): void {
+  applySavedTheme();
+  const audio = createGameAudio();
+  let installPrompt: (() => Promise<void>) | null = null;
   let state = createInitialState();
   let showLeaderboard = false;
+  let showProgress = false;
   let scoreSaved = false;
+  let progressRecorded = false;
+  let unlockedNotice = "";
   let hasContinue = loadGame() !== null;
 
   const title = document.createElement("h1");
@@ -159,6 +174,21 @@ export function renderApp(root: HTMLElement): void {
   openBoard.className = "pause-button";
   openBoard.textContent = "Leaderboard";
 
+  const openProgress = document.createElement("button");
+  openProgress.type = "button";
+  openProgress.className = "pause-button";
+  openProgress.textContent = "Progress";
+
+  const installButton = document.createElement("button");
+  installButton.type = "button";
+  installButton.className = "pause-button install-button";
+  installButton.textContent = "Install";
+  installButton.hidden = true;
+
+  const offlineNote = document.createElement("p");
+  offlineNote.className = "offline-note";
+  offlineNote.textContent = "Offline. Saved progress still works.";
+
   const helpButton = document.createElement("button");
   helpButton.type = "button";
   helpButton.className = "pause-button";
@@ -208,6 +238,8 @@ export function renderApp(root: HTMLElement): void {
     helpButton,
     settingsButton,
     openBoard,
+    openProgress,
+    installButton,
     pause,
   );
 
@@ -266,6 +298,8 @@ export function renderApp(root: HTMLElement): void {
   gameOverReason.className = "game-over-reason";
   const gameOverScore = document.createElement("p");
   gameOverScore.className = "game-over-score";
+  const gameOverAchievements = document.createElement("p");
+  gameOverAchievements.className = "game-over-achievements";
   const nameForm = document.createElement("form");
   nameForm.className = "name-form";
   const nameLabel = document.createElement("label");
@@ -294,7 +328,11 @@ export function renderApp(root: HTMLElement): void {
   openBoardFromOver.type = "button";
   openBoardFromOver.className = "pause-button";
   openBoardFromOver.textContent = "Leaderboard";
-  gameOverActions.append(playAgain, openBoardFromOver);
+  const openProgressFromOver = document.createElement("button");
+  openProgressFromOver.type = "button";
+  openProgressFromOver.className = "pause-button";
+  openProgressFromOver.textContent = "Progress";
+  gameOverActions.append(playAgain, openBoardFromOver, openProgressFromOver);
   const gameOverPlate = document.createElement("div");
   gameOverPlate.className = "game-over-plate";
   gameOverPlate.append(nameForm, gameOverActions);
@@ -304,6 +342,7 @@ export function renderApp(root: HTMLElement): void {
     gameOverTitle,
     gameOverReason,
     gameOverScore,
+    gameOverAchievements,
     gameOverPlate,
   );
 
@@ -342,6 +381,8 @@ export function renderApp(root: HTMLElement): void {
   boardActions.append(clearBoard, back);
   board.append(boardTitle, boardMessage, tableWrap, boardActions);
 
+  const progressView = createProgressView();
+
   const confirmDialog = document.createElement("dialog");
   confirmDialog.className = "pause-dialog";
   const confirmCard = document.createElement("div");
@@ -377,6 +418,7 @@ export function renderApp(root: HTMLElement): void {
     "Stock is spent when an ingredient goes into the cauldron. A successful brew scores points and adds time, never above the start time. A failed brew costs a life. Pour Out empties the cauldron for 10 seconds, keeps the life, and does not return the ingredients. On Medium and Hard, some mixes start a reaction that changes the bars, the clock, or the cauldron. The same mix does not trigger twice until it breaks.",
     "The run ends when time runs out, lives reach 0, or the shelf and the cauldron are both empty. Pause stops the clock. An unfinished game can be continued after the page is reloaded.",
     "During a run, P pauses, B brews, O pours out, and 1–8 adds the ingredient in that shelf slot. These keys do nothing on the start screen, the pause screen, or the game over screen. Resume with the Resume button.",
+    "Install keeps a copy on this device. After one online visit, the game can open without a network. Progress, themes, and sound settings stay in the browser.",
   ]) {
     const paragraph = document.createElement("p");
     paragraph.className = "rules-text";
@@ -394,7 +436,7 @@ export function renderApp(root: HTMLElement): void {
   settingsCard.className = "pause-card";
   const settingsTitle = document.createElement("h2");
   settingsTitle.id = "settings-title";
-  settingsTitle.textContent = "Difficulty";
+  settingsTitle.textContent = "Settings";
   const difficultyButtons: HTMLButtonElement[] = [];
   for (const difficulty of DIFFICULTIES) {
     const button = document.createElement("button");
@@ -405,6 +447,40 @@ export function renderApp(root: HTMLElement): void {
     difficultyButtons.push(button);
     settingsCard.append(button);
   }
+  const soundTitle = document.createElement("h3");
+  soundTitle.className = "settings-label";
+  soundTitle.textContent = "Sound";
+  const musicButton = document.createElement("button");
+  musicButton.type = "button";
+  musicButton.className = "pause-button difficulty-button sound-button";
+  const effectsButton = document.createElement("button");
+  effectsButton.type = "button";
+  effectsButton.className = "pause-button difficulty-button sound-button";
+  const paintSound = (): void => {
+    const current = audio.settings();
+    musicButton.textContent = `Music: ${current.music ? "On" : "Off"}`;
+    effectsButton.textContent = `Effects: ${current.effects ? "On" : "Off"}`;
+    musicButton.classList.toggle("is-selected", current.music);
+    effectsButton.classList.toggle("is-selected", current.effects);
+    musicButton.setAttribute("aria-pressed", current.music ? "true" : "false");
+    effectsButton.setAttribute(
+      "aria-pressed",
+      current.effects ? "true" : "false",
+    );
+  };
+  paintSound();
+  musicButton.addEventListener("click", () => {
+    audio.unlock();
+    audio.toggle("music");
+    paintSound();
+  });
+  effectsButton.addEventListener("click", () => {
+    audio.unlock();
+    audio.toggle("effects");
+    paintSound();
+    audio.play("success");
+  });
+  settingsCard.append(soundTitle, musicButton, effectsButton);
   const settingsClose = document.createElement("button");
   settingsClose.type = "button";
   settingsClose.className = "start-button";
@@ -416,10 +492,12 @@ export function renderApp(root: HTMLElement): void {
 
   root.replaceChildren(
     masthead,
+    offlineNote,
     field,
     pauseDialog,
     gameOver,
     board,
+    progressView.root,
     confirmDialog,
     helpDialog,
     settingsDialog,
@@ -435,16 +513,15 @@ export function renderApp(root: HTMLElement): void {
   const paint = (): void => {
     const recipe = state.activeRecipe;
     const over = state.gameOverReason !== null;
-    const playing = state.started && !over && !state.paused && !showLeaderboard;
-    field.hidden = over || showLeaderboard;
+    const overlay = showLeaderboard || showProgress;
+    const playing = state.started && !over && !state.paused && !overlay;
+    field.hidden = over || overlay;
     field.classList.toggle("is-paused", state.paused);
     field.inert = state.paused;
-    gameOver.hidden = !over || showLeaderboard;
+    gameOver.hidden = !over || overlay;
     board.hidden = !showLeaderboard;
-    masthead.classList.toggle(
-      "is-title-screen",
-      !state.started && !showLeaderboard,
-    );
+    progressView.root.hidden = !showProgress;
+    masthead.classList.toggle("is-title-screen", !state.started && !overlay);
     scoreValue.textContent = String(state.started ? state.score : 0);
     status.setAttribute("aria-label", `Score ${scoreValue.textContent}`);
     continueButton.hidden = state.started || !hasContinue;
@@ -452,6 +529,8 @@ export function renderApp(root: HTMLElement): void {
     helpButton.hidden = state.started;
     settingsButton.hidden = state.started;
     openBoard.hidden = state.started;
+    openProgress.hidden = state.started;
+    installButton.hidden = state.started || installPrompt === null;
     pause.hidden = !playing;
     const maxLives = DIFFICULTY_SETTINGS[state.difficulty].lives;
     if (lives.children.length !== maxLives) {
@@ -486,6 +565,8 @@ export function renderApp(root: HTMLElement): void {
       gameOverKicker.textContent = GAME_OVER_KICKER[state.gameOverReason];
       gameOverReason.textContent = GAME_OVER_TEXT[state.gameOverReason];
       gameOverScore.textContent = `Final score: ${state.score}`;
+      gameOverAchievements.textContent = unlockedNotice;
+      gameOverAchievements.hidden = unlockedNotice === "";
       nameForm.hidden =
         scoreSaved ||
         !isTopTenScore(loadLeaderboard(state.difficulty), state.score);
@@ -501,6 +582,10 @@ export function renderApp(root: HTMLElement): void {
     if (showLeaderboard) {
       renderLeaderboard(tableBody, loadLeaderboard(state.difficulty));
       boardMessage.hidden = boardMessage.textContent === "";
+    }
+
+    if (showProgress) {
+      progressView.render(loadProgress());
     }
 
     renderBars(
@@ -521,8 +606,10 @@ export function renderApp(root: HTMLElement): void {
       ? `Reaction: ${reactionLabel}`
       : "";
     renderShelf(shelf, state, (id) => {
+      const before = state;
       state = addToCauldron(state, id);
       remember();
+      hearCauldron(before);
       paint();
     });
     renderCauldron(cauldronBody, state.cauldronIngredients);
@@ -546,11 +633,47 @@ export function renderApp(root: HTMLElement): void {
 
     saveGame(state);
     hasContinue = state.gameOverReason === null;
+
+    if (!state.gameOverReason || progressRecorded) {
+      return;
+    }
+
+    const update = recordFinishedRun(state);
+    progressRecorded = true;
+    audio.play("game-over");
+    if (!update || update.newlyUnlocked.length === 0) {
+      unlockedNotice = "";
+      return;
+    }
+
+    audio.play("achievement");
+    const names = unlockedAchievementNames(update.newlyUnlocked);
+    unlockedNotice =
+      names.length === 1
+        ? `Achievement unlocked: ${names[0]}`
+        : `Achievements unlocked: ${names.join(", ")}`;
+  };
+
+  const hearCauldron = (before: GameState): void => {
+    if (
+      state.lastReactionId &&
+      state.lastReactionId !== before.lastReactionId
+    ) {
+      audio.play("reaction");
+      return;
+    }
+
+    if (state.cauldronIngredients.length > before.cauldronIngredients.length) {
+      audio.play("add");
+    }
   };
 
   const beginRun = (): void => {
     scoreSaved = false;
+    progressRecorded = false;
+    unlockedNotice = "";
     showLeaderboard = false;
+    showProgress = false;
     nameInput.value = "";
     nameError.textContent = "";
     state = startGame(state);
@@ -562,6 +685,7 @@ export function renderApp(root: HTMLElement): void {
     cauldron,
     () => canAddIngredient(state),
     (id) => {
+      const before = state;
       const next = addToCauldron(state, id);
       if (next === state) {
         return;
@@ -570,6 +694,7 @@ export function renderApp(root: HTMLElement): void {
       suppressNextClick();
       state = next;
       remember();
+      hearCauldron(before);
       paint();
     },
   );
@@ -586,7 +711,10 @@ export function renderApp(root: HTMLElement): void {
     }
 
     scoreSaved = false;
+    progressRecorded = false;
+    unlockedNotice = "";
     showLeaderboard = false;
+    showProgress = false;
     nameInput.value = "";
     nameError.textContent = "";
     state = continueGame(save);
@@ -635,6 +763,10 @@ export function renderApp(root: HTMLElement): void {
       return;
     }
 
+    if (!state.gameOverReason) {
+      audio.play(state.lastBrew === "success" ? "success" : "failure");
+    }
+
     if (state.lastBrew === "success") {
       field.classList.remove("is-shaking");
       replayAnimation(cauldron, "is-brew-success");
@@ -646,9 +778,17 @@ export function renderApp(root: HTMLElement): void {
   };
 
   const runPour = (): void => {
+    const before = state;
     state = pourOut(state);
     remember();
     paint();
+    if (
+      before.cauldronIngredients.length > 0 &&
+      state.cauldronIngredients.length === 0 &&
+      !state.gameOverReason
+    ) {
+      audio.play("pour");
+    }
   };
 
   const runPause = (): void => {
@@ -662,7 +802,7 @@ export function renderApp(root: HTMLElement): void {
   pause.addEventListener("click", runPause);
 
   const playGate = (): PlayGate => {
-    if (!state.started || showLeaderboard) {
+    if (!state.started || showLeaderboard || showProgress) {
       return "menu";
     }
 
@@ -676,6 +816,10 @@ export function renderApp(root: HTMLElement): void {
 
     return "playing";
   };
+
+  document.addEventListener("pointerdown", () => {
+    audio.unlock();
+  });
 
   document.addEventListener("keydown", (event) => {
     const shortcut = shortcutFromEvent(event, playGate());
@@ -705,8 +849,10 @@ export function renderApp(root: HTMLElement): void {
       return;
     }
 
+    const before = state;
     state = addToCauldron(state, ingredient.id);
     remember();
+    hearCauldron(before);
     paint();
   });
 
@@ -718,7 +864,10 @@ export function renderApp(root: HTMLElement): void {
 
   exit.addEventListener("click", () => {
     scoreSaved = false;
+    progressRecorded = false;
+    unlockedNotice = "";
     showLeaderboard = false;
+    showProgress = false;
     nameInput.value = "";
     nameError.textContent = "";
     hasContinue = !clearSave() && loadGame() !== null;
@@ -728,15 +877,47 @@ export function renderApp(root: HTMLElement): void {
 
   const openLeaderboard = (): void => {
     showLeaderboard = true;
+    showProgress = false;
     boardMessage.textContent = "";
+    paint();
+  };
+
+  const openProgressScreen = (): void => {
+    showProgress = true;
+    showLeaderboard = false;
     paint();
   };
 
   openBoard.addEventListener("click", openLeaderboard);
   openBoardFromOver.addEventListener("click", openLeaderboard);
+  openProgress.addEventListener("click", openProgressScreen);
+  openProgressFromOver.addEventListener("click", openProgressScreen);
+
+  listenForInstall((prompt) => {
+    installPrompt = prompt;
+    paint();
+  });
+
+  installButton.addEventListener("click", () => {
+    const prompt = installPrompt;
+    if (!prompt) {
+      return;
+    }
+
+    installPrompt = null;
+    void prompt();
+    paint();
+  });
+
+  watchConnection(offlineNote);
 
   back.addEventListener("click", () => {
     showLeaderboard = false;
+    paint();
+  });
+
+  progressView.back.addEventListener("click", () => {
+    showProgress = false;
     paint();
   });
 

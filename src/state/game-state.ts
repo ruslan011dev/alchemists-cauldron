@@ -29,6 +29,11 @@ export interface GameState {
   gameOverReason: GameOverReason | null;
   paused: boolean;
   lastReactionId: string | null;
+  successfulBrews: number;
+  failedBrews: number;
+  reactionsFired: number;
+  successStreak: number;
+  bestSuccessStreak: number;
 }
 
 export function createInitialState(
@@ -58,6 +63,11 @@ export function createInitialState(
     gameOverReason: null,
     paused: false,
     lastReactionId: null,
+    successfulBrews: 0,
+    failedBrews: 0,
+    reactionsFired: 0,
+    successStreak: 0,
+    bestSuccessStreak: 0,
   };
 }
 
@@ -93,6 +103,11 @@ export function startGame(state: GameState, now = Date.now()): GameState {
     gameOverReason: null,
     paused: false,
     lastReactionId: null,
+    successfulBrews: 0,
+    failedBrews: 0,
+    reactionsFired: 0,
+    successStreak: 0,
+    bestSuccessStreak: 0,
   };
 }
 
@@ -154,6 +169,11 @@ export function continueGame(save: SavedGame): GameState {
     gameOverReason: null,
     paused: true,
     lastReactionId: null,
+    successfulBrews: save.successfulBrews,
+    failedBrews: save.failedBrews,
+    reactionsFired: save.reactionsFired,
+    successStreak: save.successStreak,
+    bestSuccessStreak: save.bestSuccessStreak,
   };
 }
 
@@ -242,6 +262,13 @@ export function addToCauldron(
     lastReactionId: fired[0]?.id ?? null,
   };
 
+  if (fired.length > 0) {
+    updated = {
+      ...updated,
+      reactionsFired: updated.reactionsFired + fired.length,
+    };
+  }
+
   for (const reaction of fired) {
     updated = applyReactionFire(updated, reaction, now);
     if (updated.gameOverReason) {
@@ -317,6 +344,7 @@ export function brewPotion(state: GameState, now = Date.now()): GameState {
       settings.startingTime,
       current.timeLeft + settings.timeBonus,
     );
+    const successStreak = current.successStreak + 1;
 
     return settle({
       ...current,
@@ -327,6 +355,9 @@ export function brewPotion(state: GameState, now = Date.now()): GameState {
       activeRecipe: pickRecipe(settings.difficulty),
       lastBrew: "success",
       lastReactionId: null,
+      successfulBrews: current.successfulBrews + 1,
+      successStreak,
+      bestSuccessStreak: Math.max(current.bestSuccessStreak, successStreak),
     });
   }
 
@@ -336,6 +367,8 @@ export function brewPotion(state: GameState, now = Date.now()): GameState {
     cauldronIngredients: [],
     lastBrew: "failure",
     lastReactionId: null,
+    failedBrews: current.failedBrews + 1,
+    successStreak: 0,
   });
 }
 
